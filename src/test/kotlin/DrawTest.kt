@@ -76,14 +76,14 @@ internal class DrawTest {
             file = testOutput.resolve("layout1.png"),
             modifier = Modifier()
                 .width(1000.dp)
-                .background(Color.makeRGB(255, 205, 204))
+                .background(Color.makeRGB(204, 218, 255))
         ) {
             Column(Modifier()
                     .fillMaxWidth()
                     .margin(horizontal = 20.dp, vertical = 30.dp)
                     .padding(20.dp)
-                    .background(Color.WHITE)
-                    .border(3.dp, 15.dp, Color.WHITE.withAlpha(0.8f))
+                    .background(Color.WHITE.withAlpha(0.8f))
+                    .border(3.dp, 15.dp, Color.WHITE)
                     .shadows(Shadow.ELEVATION_5)
             ) {
                 Row(Modifier()
@@ -92,7 +92,7 @@ internal class DrawTest {
                     .padding(10.dp)
                     .background(Color.WHITE.withAlpha(0.5f))
                     .border(3.dp, 15.dp, Color.WHITE)
-                    .shadows(Shadow.ELEVATION_3)
+                    .shadows(Shadow.ELEVATION_2)
                 ) {
                     Box(Modifier().width(80.dp).fillMaxHeight()) {
                         Box(Modifier()
@@ -112,7 +112,7 @@ internal class DrawTest {
                     Column(Modifier().fillWidth().fillMaxHeight().padding(10.dp)) {
                         Box(Modifier().fillMaxWidth().fillHeight().background(Color.RED)) {
                             Box(Modifier().fillMaxWidth().fillMaxHeight()) {
-                                Text(text = "测试测试测试", alignment = LayoutAlignment.TOP_RIGHT)
+                                Text(text = "测试文字右对齐", fontSize = 22.dp, alignment = LayoutAlignment.TOP_RIGHT)
                             }
                         }
                         Box(Modifier()
@@ -122,7 +122,7 @@ internal class DrawTest {
                             .background(Color.GREEN)
                         ) {
                             Box(Modifier().fillMaxWidth().fillMaxHeight()) {
-                                Text(text = "TEST TEST TEST")
+                                Text(text = "测试文字左对齐", fontSize = 22.dp)
                             }
                         }
                     }
@@ -134,23 +134,32 @@ internal class DrawTest {
                         .margin(top = 20.dp)
                         .background(Color.WHITE.withAlpha(0.7f))
                         .border(3.dp, 15.dp, Color.WHITE)
-                        .shadows(Shadow.ELEVATION_3)
+                        .shadows(Shadow.ELEVATION_2)
                 ) {
                     Row(Modifier().fillMaxWidth().margin(10.dp)) {
                         Text(
-                            text = "啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊",
+                            text = "文字并排测试文字并排测试文字并排测试文字并排测试文字并排测试文字并排测试文字并排测试文字并排测试",
+                            fontSize = 22.dp,
                             modifier = Modifier().fillWidth()
                         )
                         Text(
-                            text = "哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦哦",
+                            text = "文字超出自动隐藏文字超出自动隐藏文字超出自动隐藏文字超出自动隐藏文字超出自动隐藏文字超出自动隐藏",
+                            fontSize = 22.dp,
                             modifier = Modifier().fillWidth()
                         )
                     }
-                    Box(Modifier().fillMaxWidth().margin(10.dp)) {
+                    Grid (maxLineCount = 3, modifier = Modifier().fillMaxWidth().margin(10.dp)) {
                         Image(
                             image = loadTestImage("image", "bg1.jpg"),
-                            ratio = 16/10f,
-                            modifier = Modifier().border(3.dp, 15.dp, Color.RED)
+                            modifier = Modifier().background(Color.RED.withAlpha(0.6f)).border(2.dp, 10.dp).shadows(Shadow.ELEVATION_1)
+                        )
+                        Image(
+                            image = loadTestImage("image", "bg1.jpg"),
+                            modifier = Modifier().background(Color.RED.withAlpha(0.6f)).border(2.dp, 10.dp).shadows(Shadow.ELEVATION_1)
+                        )
+                        Image(
+                            image = loadTestImage("image", "bg1.jpg"),
+                            modifier = Modifier().background(Color.RED.withAlpha(0.6f)).border(2.dp, 10.dp).shadows(Shadow.ELEVATION_1)
                         )
                     }
                 }
@@ -161,7 +170,7 @@ internal class DrawTest {
                     .margin(top = 20.dp)
                     .background(Color.WHITE.withAlpha(0.7f))
                     .border(3.dp, 15.dp, Color.WHITE)
-                    .shadows(Shadow.ELEVATION_3)
+                    .shadows(Shadow.ELEVATION_2)
                 )
             }
         }
@@ -170,7 +179,7 @@ internal class DrawTest {
     private fun Layout.RichParagraphTest(modifier: Modifier) {
         val emojiMap = loadAllTestImage("emoji")
 
-        var currEmoji = "[阿库娅_不关我事]"
+        var currEmoji = "[tv_doge]"
         fun randomEmoji(): String {
             currEmoji = emojiMap.keys.random()
             return currEmoji

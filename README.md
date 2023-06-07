@@ -8,19 +8,36 @@
 
 以下代码可在 [DrawTest](src/test/kotlin/DrawTest.kt) 中找到
 
+## 使用
+### Gradle
+```kotlin
+implementation("top.colter.skiko:skiko-layout:0.0.1")
+```
+### Maven
+```xml
+<dependency>
+    <groupId>top.colter.skiko</groupId>
+    <artifactId>skiko-layout</artifactId>
+    <version>0.0.1</version>
+</dependency>
+```
+
 ## 布局
 
 <img src="docs/layout1.png" width="400" alt="样式1">  
 
 ```kotlin
+// View视图，最外层。最好指定宽或高
 View(
     file = testOutput.resolve("layout1.png"),
+    // 样式
     modifier = Modifier()
         .width(1000.dp)
         .background(Color.makeRGB(255, 205, 204))
 ) {
+    // Column 列布局
     Column(Modifier()
-        .fillMaxWidth()
+        .fillMaxWidth() // 继承父元素宽度
         .margin(horizontal = 20.dp, vertical = 30.dp)
         .padding(20.dp)
         .background(Color.WHITE)

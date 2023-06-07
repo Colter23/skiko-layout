@@ -16,7 +16,7 @@ fun Layout.RichText(
     modifier: Modifier = Modifier(),
 ) {
     Layout(
-        layout = TextAreaLayout(
+        layout = RichTextLayout(
             paragraph = paragraph,
             alignment = alignment,
             maxLinesCount = maxLinesCount,
@@ -27,7 +27,7 @@ fun Layout.RichText(
     )
 }
 
-class TextAreaLayout(
+class RichTextLayout(
     val paragraph: RichParagraph,
     val alignment: LayoutAlignment,
     val maxLinesCount: Int,
