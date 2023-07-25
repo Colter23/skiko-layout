@@ -1,6 +1,6 @@
 package top.colter.skiko.layout
 
-import org.jetbrains.skia.*
+import org.jetbrains.skia.Canvas
 import top.colter.skiko.Modifier
 import top.colter.skiko.data.*
 import top.colter.skiko.toDp
@@ -38,13 +38,16 @@ class RichTextLayout(
     private var layoutParagraph: RichParagraph? = null
 
     override fun measure(deep: Boolean) {
+        // 第一遍计算宽高
         preMeasure()
 
+        // 确定宽度
         val maxWidth = if (modifier.width.isNotNull()) modifier.contentWidth.px
         else if (modifier.maxWidth.isNotNull()) modifier.maxWidth.px
         else if (!modifier.fillWidth) parentLayout!!.modifier.contentWidth.px - modifier.margin.horizontal.px
         else 0f
 
+        // 进行布局 确定高度
         if (layoutParagraph == null && maxWidth != 0f) {
             layoutParagraph = paragraph.layout(maxWidth)
             if (height.isNull()) height = layoutParagraph!!.height.toDp()
@@ -53,10 +56,12 @@ class RichTextLayout(
     }
 
     override fun place(bounds: LayoutBounds) {
+        // 确定当前元素位置
         position = alignment.place(width, height, modifier, bounds)
     }
 
     override fun draw(canvas: Canvas) {
+        // 绘制文章
         layoutParagraph?.print(canvas, position.x.px, position.y.px)
     }
 

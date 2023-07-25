@@ -68,6 +68,7 @@ fun RichParagraph.layout(width: Float): RichParagraph {
                         node.style.fontSize
                     )
                     val tempText = StringBuilder()
+                    // 根据码点分割字符串
                     for (point in node.value.codePoints()) {
                         val c = String(intArrayOf(point), 0, intArrayOf(point).size)
                         if (c == "\n") {

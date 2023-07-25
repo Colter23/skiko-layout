@@ -1,12 +1,26 @@
 package top.colter.skiko.data
 
-import org.jetbrains.skia.paragraph.Alignment
 import top.colter.skiko.Dp
 import top.colter.skiko.Modifier
 import top.colter.skiko.layout.LayoutBounds
 import top.colter.skiko.layout.LayoutPosition
 
 
+/**
+ * 布局对齐方式
+ *
+ * [TOP_LEFT] ↖
+ * [TOP_CENTER] ↑
+ * [TOP_RIGHT] ↗
+ *
+ * [CENTER_LEFT] ←
+ * [CENTER] ·
+ * [CENTER_RIGHT] →
+ *
+ * [BOTTOM_LEFT] ↙
+ * [BOTTOM_CENTER] ↓
+ * [BOTTOM_RIGHT] ↘
+ */
 class LayoutAlignment private constructor(
     val horizontal: AxisAlignment,
     val vertical: AxisAlignment

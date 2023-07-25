@@ -50,11 +50,14 @@ class GridLayout(
 ) : Layout(modifier, parentLayout) {
 
     override fun measure(deep: Boolean) {
+        // 第一遍计算宽高
         preMeasure()
 
         if (child.isNotEmpty()) {
+            // 重新计算子元素宽高
             if (deep) child.forEach { it.measure(true) }
 
+            // 合并子元素样式
             if (itemModifier != null) {
                 child.forEach {
                     it.modifier.merge(itemModifier)
@@ -62,6 +65,7 @@ class GridLayout(
                 }
             }
 
+            // 指定子元素宽高
             if (width.isNotNull() || height.isNotNull()) {
                 val lineCount = if (child.size >= maxLineCount) maxLineCount else child.size
                 val itemWidth: Dp
@@ -81,6 +85,7 @@ class GridLayout(
                 }
             }
 
+            // 由子元素确定当前元素宽高
             if (width.isNull()) {
                 width = modifier.padding.horizontal
                 child.forEachIndexed { index, layout ->
@@ -103,10 +108,12 @@ class GridLayout(
     }
 
     override fun place(bounds: LayoutBounds) {
+        // 确定当前元素位置
         position = alignment.place(width, height, modifier, bounds)
 
         var x = 0.dp
         var y = 0.dp
+        // 确定子元素位置
         child.forEachIndexed { index, layout ->
             layout.place(
                 LayoutBounds.makeXYWH(
@@ -126,7 +133,9 @@ class GridLayout(
     }
 
     override fun draw(canvas: Canvas) {
+        // 绘制当前元素
         drawBgBox(canvas)
+        // 绘制子元素
         super.draw(canvas)
     }
 

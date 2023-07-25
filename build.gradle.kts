@@ -19,19 +19,31 @@ repositories {
 }
 
 dependencies {
-    val skikoVersion = "0.7.54"
+    val skikoVersion = "0.7.71"
 
     api("org.jetbrains.skiko:skiko-awt:$skikoVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta")
 
     implementation(kotlin("reflect"))
 
+    val osName = System.getProperty("os.name")
+    val targetOs = when {
+        osName == "Mac OS X" -> "macos"
+        osName.startsWith("Win") -> "windows"
+        osName.startsWith("Linux") -> "linux"
+        else -> error("Unsupported OS: $osName")
+    }
+
+    val osArch = System.getProperty("os.arch")
+    val targetArch = when (osArch) {
+        "x86_64", "amd64" -> "x64"
+        "aarch64" -> "arm64"
+        else -> error("Unsupported arch: $osArch")
+    }
+    val target = "${targetOs}-${targetArch}"
+    testImplementation("org.jetbrains.skiko:skiko-awt-runtime-$target:$skikoVersion")
+
     testImplementation(kotlin("test"))
-    testImplementation("org.jetbrains.skiko:skiko-awt-runtime-windows-x64:$skikoVersion")
-//    testImplementation("org.jetbrains.skiko:skiko-awt-runtime-linux-x64:$skikoVersion")
-//    testImplementation("org.jetbrains.skiko:skiko-awt-runtime-linux-arm64:$skikoVersion")
-//    testImplementation("org.jetbrains.skiko:skiko-awt-runtime-macos-x64:$skikoVersion")
-//    testImplementation("org.jetbrains.skiko:skiko-awt-runtime-macos-arm64:$skikoVersion")
 }
 
 tasks.test {

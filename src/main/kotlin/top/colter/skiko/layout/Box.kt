@@ -35,11 +35,14 @@ class BoxLayout(
 ) : Layout(modifier, parentLayout) {
 
     override fun measure(deep: Boolean) {
+        // 第一遍计算宽高
         preMeasure()
 
         if (child.isNotEmpty()) {
+            // 重新计算子元素宽高
             if (deep) child.forEach { it.measure(true) }
 
+            // 由子元素确定当前元素宽高
             if (width.isNull() && !modifier.fillMaxWidth && !modifier.fillWidth) width =
                 child.maxWidth() + modifier.padding.horizontal
             if (height.isNull() && !modifier.fillMaxHeight && !modifier.fillHeight) height =
@@ -48,10 +51,13 @@ class BoxLayout(
     }
 
     override fun place(bounds: LayoutBounds) {
+        // 确定当前元素位置
         position = alignment.place(width, height, modifier, bounds)
 
+        // 确定子元素位置
         for (layout in child) {
             layout.place(
+                // 指定子元素最大边界
                 LayoutBounds.makeXYWH(
                     left = position.x + modifier.padding.left,
                     top = position.y + modifier.padding.top,
@@ -63,7 +69,9 @@ class BoxLayout(
     }
 
     override fun draw(canvas: Canvas) {
+        // 绘制当前元素
         drawBgBox(canvas)
+        // 绘制子元素
         super.draw(canvas)
     }
 

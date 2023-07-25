@@ -21,6 +21,44 @@ implementation("top.colter.skiko:skiko-layout:0.0.1")
     <version>0.0.1</version>
 </dependency>
 ```
+## 单位
+dp 默认与 px 1:1 转换
+
+可通过 `Dp.factor` 调整整体转换比例
+
+## 元素
+### 布局元素
+
+视图 `View` 元素最外层 最好指定宽或高    
+列 `Column` 内部元素会自动向下排列    
+行 `Row` 内部元素会自动向右排列    
+盒子 `Box` 内部元素绝对定位    
+宫格 `Grid`    
+
+### 内容元素
+图片 `Image`    
+文本 `Text` 纯文本元素    
+富文本 `RichText` 支持自定义样式与emoji图片    
+
+## 样式
+`Modifier`    
+宽度 `width`    
+高度 `height`    
+最小宽度 `minWidth` (暂时没用)    
+最小高度 `minHeight` (暂时没用)    
+最大宽度 `maxWidth` (暂时没用)    
+最大高度 `maxHeight` (暂时没用)    
+填充剩余宽度 `fillWidth`    
+填充剩余高度 `fillHeight`    
+继承父元素宽度 `fillMaxWidth`    
+继承父元素高度 `fillMaxHeight`    
+按比例继承父元素宽度 `fillRatioWidth`    
+按比例继承父元素高度 `fillRatioHeight`    
+内边距 `padding`    
+外边距 `margin`    
+背景 `background` (暂时没用)    
+边框 `border`    
+阴影 `shadows`    
 
 ## 布局
 

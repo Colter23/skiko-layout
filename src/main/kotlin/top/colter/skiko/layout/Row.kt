@@ -35,13 +35,16 @@ class RowLayout(
 ) : Layout(modifier, parentLayout) {
 
     override fun measure(deep: Boolean) {
+        // 第一遍计算宽高
         preMeasure()
 
         if (child.isNotEmpty()) {
+            // 重新计算子元素宽高
             if (deep) child.forEach { it.measure(true) }
 
+            // 指定子元素宽度
             if (width.isNotNull()) {
-                val sw = modifier.contentWidth - child.sumWidth() // modifier.contentWidth - w
+                val sw = modifier.contentWidth - child.sumWidth()
                 if (sw > 0.dp) {
                     child.filter { it.modifier.fillWidth }.ifNotEmpty {
                         forEach {
@@ -52,19 +55,21 @@ class RowLayout(
                 }
             }
 
-            if (width.isNull()) width =
-                child.sumWidth() + modifier.padding.horizontal // && child.none { it.width.isNull() }
-            if (height.isNull()) height =
-                child.maxHeight() + modifier.padding.vertical //  && child.none { it.height.isNull() }
+            // 由子元素确定当前元素宽高
+            if (width.isNull()) width = child.sumWidth() + modifier.padding.horizontal
+            if (height.isNull()) height = child.maxHeight() + modifier.padding.vertical
         }
     }
 
     override fun place(bounds: LayoutBounds) {
+        // 确定当前元素位置
         position = alignment.place(width, height, modifier, bounds)
 
         var x = 0.dp
+        // 确定子元素位置
         for (layout in child) {
             layout.place(
+                // 指定子元素最大边界
                 LayoutBounds.makeXYWH(
                     left = position.x + modifier.padding.left + x,
                     top = position.y + modifier.padding.top,
@@ -77,7 +82,9 @@ class RowLayout(
     }
 
     override fun draw(canvas: Canvas) {
+        // 绘制当前元素
         drawBgBox(canvas)
+        // 绘制子元素
         super.draw(canvas)
     }
 

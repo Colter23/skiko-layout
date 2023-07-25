@@ -81,12 +81,16 @@ class TextLayout(
 
 
     override fun measure(deep: Boolean) {
+        // 第一遍计算宽高
         preMeasure()
+
+        // 计算宽度
         val maxWidth = if (modifier.width.isNotNull()) modifier.contentWidth.px
         else if (modifier.maxWidth.isNotNull()) modifier.maxWidth.px
         else if (!modifier.fillWidth) parentLayout!!.modifier.contentWidth.px - modifier.margin.horizontal.px
         else 0f
 
+        // 进行布局 确定高度
         if (maxWidth != 0f) {
             layoutParagraph = paragraph.layout(maxWidth)
             if (width.isNull()) width = layoutParagraph!!.maxIntrinsicWidth.toDp()
@@ -96,10 +100,12 @@ class TextLayout(
     }
 
     override fun place(bounds: LayoutBounds) {
+        // 确定当前元素位置
         position = alignment.place(width, height, modifier, bounds)
     }
 
     override fun draw(canvas: Canvas) {
+        // 绘制文本
         layoutParagraph?.paint(canvas, position.x.px, position.y.px)
     }
 

@@ -1,12 +1,14 @@
 package top.colter.skiko.data
 
-import org.jetbrains.skia.Color
 import top.colter.skiko.px
+
 
 /**
  * 阴影
  *
  * 可直接使用内置的 Material Design Elevation [ELEVATION_1] ~ [ELEVATION_12]
+ *
+ * [elevations] 阴影列表
  */
 data class Shadow(
     val offsetX: Float,

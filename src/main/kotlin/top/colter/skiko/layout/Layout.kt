@@ -2,14 +2,17 @@ package top.colter.skiko.layout
 
 import org.jetbrains.skia.*
 import top.colter.skiko.*
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
+
 
 /**
  * 计算大小
  */
 fun interface Mensurable {
+    /**
+     * 进行计算
+     *
+     * [deep] 是否重新深入计算子元素
+     */
     fun measure(deep: Boolean)
 }
 
@@ -35,26 +38,37 @@ abstract class Layout(
     var parentLayout: Layout? = null
 ) : Mensurable, Placeable, Drawable {
 
+    // 位置
     var position: LayoutPosition = LayoutPosition()
+    // 子元素列表
     var child: MutableList<Layout> = mutableListOf()
 
+    // 宽高（不包括外边距）
     var width: Dp = Dp.NULL
     var height: Dp = Dp.NULL
 
+    // 内容宽高（不包括内外边距）
     val contentWidth
         get() = if (width.isNotNull() && width - modifier.padding.horizontal > 0.dp) width - modifier.padding.horizontal else 0.dp
     val contentHeight
         get() = if (height.isNotNull() && height - modifier.padding.vertical > 0.dp) height - modifier.padding.vertical else 0.dp
 
+    // 元素边界（包括内外边距）
     val boxWidth get() = width + modifier.margin.horizontal
     val boxHeight get() = height + modifier.margin.vertical
 
+    /**
+     * 第一遍计算宽高
+     * 包括手动指定宽高、由父元素继承宽高
+     */
     fun preMeasure() {
+        // 手动指定宽高
         if (width.isNull() && modifier.width.isNotNull())
             width = modifier.width
         if (height.isNull() && modifier.height.isNotNull())
             height = modifier.height
 
+        // 由父元素继承宽高且父元素宽高确定
         if (width.isNull() && modifier.fillMaxWidth && parentLayout?.modifier?.width?.isNotNull() == true) {
             modifier.width = parentLayout!!.modifier.contentWidth - modifier.margin.horizontal
             width = modifier.width
@@ -63,6 +77,8 @@ abstract class Layout(
             modifier.height = parentLayout!!.modifier.contentHeight - modifier.margin.vertical
             height = modifier.height
         }
+
+        // 按比例继承父元素宽高且父元素宽高确定
         if (width.isNull() && modifier.fillRatioWidth != 0f && parentLayout?.modifier?.width?.isNotNull() == true) {
             modifier.width = parentLayout!!.modifier.contentWidth * modifier.fillRatioWidth - modifier.margin.horizontal
             width = modifier.width
@@ -73,6 +89,9 @@ abstract class Layout(
         }
     }
 
+    /**
+     * 绘制所有子元素
+     */
     override fun draw(canvas: Canvas) {
         for (layout in child) {
             layout.draw(canvas)

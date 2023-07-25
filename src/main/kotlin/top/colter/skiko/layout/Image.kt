@@ -1,6 +1,7 @@
 package top.colter.skiko.layout
 
-import org.jetbrains.skia.*
+import org.jetbrains.skia.Canvas
+import org.jetbrains.skia.Image
 import top.colter.skiko.*
 import top.colter.skiko.data.LayoutAlignment
 import top.colter.skiko.data.place
@@ -38,8 +39,10 @@ class ImageLayout(
 ) : Layout(modifier, parentLayout) {
 
     override fun measure(deep: Boolean) {
+        // 第一遍计算宽高
         preMeasure()
 
+        // 计算图片宽高
         val w = if (width.isNotNull()) width
         else if (!modifier.fillWidth) parentLayout!!.modifier.contentWidth
         else 0.dp
@@ -61,11 +64,14 @@ class ImageLayout(
     }
 
     override fun place(bounds: LayoutBounds) {
+        // 确定当前元素位置
         position = alignment.place(width, height, modifier, bounds)
     }
 
     override fun draw(canvas: Canvas) {
+        // 绘制当前元素
         drawBgBox(canvas) {
+            // 绘制图片
             drawImageClip(image, it)
         }
     }
