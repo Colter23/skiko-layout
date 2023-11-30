@@ -5,15 +5,20 @@ import org.jetbrains.skia.paragraph.TextStyle
 
 
 /**
- * 富文本元素
+ * ## 富文本元素
+ *
+ * [Text] 文本
+ *
+ * [Emoji] Emoji
+ *
  */
-sealed class RichText {
-    data class Text(
+public sealed class RichText {
+    public data class Text(
         val value: String,
         val style: TextStyle? = null,
     ) : RichText()
 
-    data class Emoji(
+    public data class Emoji(
         val value: String,
         val img: Image,
         val style: TextStyle? = null,

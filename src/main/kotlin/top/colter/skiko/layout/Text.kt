@@ -13,7 +13,7 @@ import top.colter.skiko.data.place
  * 由于文本不是一个完整的盒子，如果达不到想要的效果，可以试着在外面套一层 [Box]
  *
  */
-fun Layout.Text(
+public fun Layout.Text(
     text: String,
     color: Int = Color.BLACK,
     fontSize: Dp = 18.dp,
@@ -40,7 +40,7 @@ fun Layout.Text(
 /**
  * ## 纯文本
  */
-fun Layout.Text(
+public fun Layout.Text(
     text: String,
     textStyle: TextStyle,
     alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
@@ -60,11 +60,11 @@ fun Layout.Text(
     )
 }
 
-class TextLayout(
-    val text: String,
-    val textStyle: TextStyle,
-    val alignment: LayoutAlignment,
-    val maxLinesCount: Int,
+public class TextLayout(
+    public val text: String,
+    public val textStyle: TextStyle,
+    public val alignment: LayoutAlignment,
+    public val maxLinesCount: Int,
     modifier: Modifier,
     parentLayout: Layout,
 ) : Layout(modifier, parentLayout) {

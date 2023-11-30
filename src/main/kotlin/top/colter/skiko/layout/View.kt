@@ -10,7 +10,7 @@ import java.io.File
 /**
  * ## 根布局
  */
-inline fun View(
+public inline fun View(
     fileStr: String,
     modifier: Modifier = Modifier(),
     alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
@@ -22,7 +22,7 @@ inline fun View(
 /**
  * ## 根布局
  */
-inline fun View(
+public inline fun View(
     file: File,
     modifier: Modifier = Modifier(),
     alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
@@ -35,7 +35,7 @@ inline fun View(
 /**
  * ## 根布局
  */
-inline fun View(
+public inline fun View(
     modifier: Modifier = Modifier(),
     alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
     content: BoxLayout.() -> Unit

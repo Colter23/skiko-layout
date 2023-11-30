@@ -13,7 +13,7 @@ import top.colter.skiko.data.place
  *
  * 最好指定宽度 [Modifier.width] / [Modifier.fillMaxWidth]
  */
-inline fun Layout.Column(
+public inline fun Layout.Column(
     modifier: Modifier = Modifier().fillMaxWidth(),
     alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
     content: ColumnLayout.() -> Unit
@@ -28,8 +28,8 @@ inline fun Layout.Column(
     )
 }
 
-class ColumnLayout(
-    val alignment: LayoutAlignment,
+public class ColumnLayout(
+    public val alignment: LayoutAlignment,
     modifier: Modifier,
     parentLayout: Layout?
 ) : Layout(modifier, parentLayout) {

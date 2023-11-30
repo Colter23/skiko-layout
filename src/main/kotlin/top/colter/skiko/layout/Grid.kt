@@ -11,13 +11,13 @@ import top.colter.skiko.data.place
  *
  * 子元素尽量不要指定宽高
  *
- * 通过 [itemModifier] 可以为每个子元素设置样式，会与子元素自身的样式合并
+ * [itemModifier] 可以为每个子元素设置样式，会与子元素自身的样式合并
  *
  * [maxLineCount] 每行最多有几个元素
  *
  * [space] 元素之间的间隔，最好使用此属性设置间隔，不要使用 margin 和 padding
  */
-inline fun Layout.Grid(
+public inline fun Layout.Grid(
     maxLineCount: Int = 3,
     space: Dp = 10.dp,
     modifier: Modifier = Modifier(),
@@ -40,11 +40,11 @@ inline fun Layout.Grid(
     )
 }
 
-class GridLayout(
-    val maxLineCount: Int,
-    val itemModifier: Modifier?,
-    val space: Dp,
-    val alignment: LayoutAlignment,
+public class GridLayout(
+    public val maxLineCount: Int,
+    public val itemModifier: Modifier?,
+    public val space: Dp,
+    public val alignment: LayoutAlignment,
     modifier: Modifier,
     parentLayout: Layout?
 ) : Layout(modifier, parentLayout) {

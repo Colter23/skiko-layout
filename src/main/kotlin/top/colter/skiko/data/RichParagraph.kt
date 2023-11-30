@@ -12,29 +12,29 @@ import kotlin.math.max
 /**
  * 富文本行
  */
-class RichLine(
-    val height: Float,
-    val nodes: List<RichText>
+public class RichLine(
+    public val height: Float,
+    public val nodes: List<RichText>
 ) {
-    constructor(nodes: List<RichText>) : this(0f, nodes)
+    public constructor(nodes: List<RichText>) : this(0f, nodes)
 }
 
 
 /**
  * 富文本文章
  */
-class RichParagraph(
-    val defaultStyle: TextStyle,
-    val lines: List<RichLine>
+public class RichParagraph(
+    public val defaultStyle: TextStyle,
+    public val lines: List<RichLine>
 ) {
-    val height: Float get() = lines.sumOf { it.height }
+    public val height: Float get() = lines.sumOf { it.height }
 }
 
 
 /**
  * 根据宽度计算换行
  */
-fun RichParagraph.layout(width: Float): RichParagraph {
+public fun RichParagraph.layout(width: Float): RichParagraph {
     val tempParagraph = mutableListOf<RichLine>()
     val defaultFont =
         Font(FontUtils.matchFamily(defaultStyle.fontFamilies.first()).getTypeface(0), defaultStyle.fontSize)
@@ -114,7 +114,7 @@ fun RichParagraph.layout(width: Float): RichParagraph {
 /**
  * 绘制
  */
-fun RichParagraph.print(canvas: Canvas, x: Float, y: Float) {
+public fun RichParagraph.print(canvas: Canvas, x: Float, y: Float) {
     val defaultFont = Font(defaultStyle.typeface, defaultStyle.fontSize)
     val paragraphStyle = ParagraphStyle()
     var currY = y

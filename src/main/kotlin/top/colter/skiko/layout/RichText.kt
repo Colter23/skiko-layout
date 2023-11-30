@@ -8,8 +8,12 @@ import top.colter.skiko.toDp
 
 /**
  * ## 富文本
+ *
+ * [paragraph] 文章 使用 [RichParagraphBuilder] 富文本构造器构建
+ *
+ * [maxLinesCount] 最大行数 默认 50 行
  */
-fun Layout.RichText(
+public fun Layout.RichText(
     paragraph: RichParagraph,
     maxLinesCount: Int = 50,
     alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
@@ -27,10 +31,10 @@ fun Layout.RichText(
     )
 }
 
-class RichTextLayout(
-    val paragraph: RichParagraph,
-    val alignment: LayoutAlignment,
-    val maxLinesCount: Int,
+public class RichTextLayout(
+    public val paragraph: RichParagraph,
+    public val alignment: LayoutAlignment,
+    public val maxLinesCount: Int,
     modifier: Modifier,
     parentLayout: Layout
 ) : Layout(modifier, parentLayout) {

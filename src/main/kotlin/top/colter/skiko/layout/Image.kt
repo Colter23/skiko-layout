@@ -5,14 +5,15 @@ import org.jetbrains.skia.Image
 import top.colter.skiko.*
 import top.colter.skiko.data.LayoutAlignment
 import top.colter.skiko.data.place
+import top.colter.skiko.data.Ratio
 
 
 /**
  * 图片元素
  *
- * [ratio] 宽高比 如: 16f/10f。 为 0 时表示保持图片原比例
+ * [ratio] 宽高比 如: 16f/10f。 为 0 时表示保持图片原比例。 可使用 [Ratio] 对象内置的比例
  */
-fun Layout.Image(
+public fun Layout.Image(
     image: Image,
     ratio: Float = 0f,
     alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
@@ -30,10 +31,10 @@ fun Layout.Image(
     )
 }
 
-class ImageLayout(
-    val image: Image,
-    val ratio: Float,
-    val alignment: LayoutAlignment,
+public class ImageLayout(
+    public val image: Image,
+    public val ratio: Float,
+    public val alignment: LayoutAlignment,
     modifier: Modifier,
     parentLayout: Layout,
 ) : Layout(modifier, parentLayout) {

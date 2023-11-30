@@ -11,9 +11,9 @@ import top.colter.skiko.data.place
  *
  * 内部元素绝对定位
  *
- * 最好指定宽高 [Modifier.width] / [Modifier.fillMaxWidth] / [Modifier.height] / [Modifier.fillMaxHeight]
+ * 最好指定宽和高 [Modifier.width] / [Modifier.fillMaxWidth] / [Modifier.height] / [Modifier.fillMaxHeight]
  */
-inline fun Layout.Box(
+public inline fun Layout.Box(
     modifier: Modifier = Modifier(),
     alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
     content: BoxLayout.() -> Unit = {}
@@ -28,8 +28,8 @@ inline fun Layout.Box(
     )
 }
 
-class BoxLayout(
-    val alignment: LayoutAlignment,
+public class BoxLayout(
+    public val alignment: LayoutAlignment,
     modifier: Modifier,
     parentLayout: Layout?
 ) : Layout(modifier, parentLayout) {

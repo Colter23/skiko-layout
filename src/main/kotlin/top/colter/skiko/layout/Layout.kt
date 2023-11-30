@@ -7,61 +7,61 @@ import top.colter.skiko.*
 /**
  * 计算大小
  */
-fun interface Mensurable {
+public fun interface Mensurable {
     /**
      * 进行计算
      *
      * [deep] 是否重新深入计算子元素
      */
-    fun measure(deep: Boolean)
+    public fun measure(deep: Boolean)
 }
 
 /**
  * 确定位置
  */
-fun interface Placeable {
-    fun place(bounds: LayoutBounds)
+public fun interface Placeable {
+    public fun place(bounds: LayoutBounds)
 }
 
 /**
  * 绘制
  */
-fun interface Drawable {
-    fun draw(canvas: Canvas)
+public fun interface Drawable {
+    public fun draw(canvas: Canvas)
 }
 
 /**
  * 布局的抽象实现
  */
-abstract class Layout(
-    var modifier: Modifier = Modifier(),
-    var parentLayout: Layout? = null
+public abstract class Layout(
+    public var modifier: Modifier = Modifier(),
+    public var parentLayout: Layout? = null
 ) : Mensurable, Placeable, Drawable {
 
     // 位置
-    var position: LayoutPosition = LayoutPosition()
+    public var position: LayoutPosition = LayoutPosition()
     // 子元素列表
-    var child: MutableList<Layout> = mutableListOf()
+    public var child: MutableList<Layout> = mutableListOf()
 
     // 宽高（不包括外边距）
-    var width: Dp = Dp.NULL
-    var height: Dp = Dp.NULL
+    public var width: Dp = Dp.NULL
+    public var height: Dp = Dp.NULL
 
     // 内容宽高（不包括内外边距）
-    val contentWidth
+    public val contentWidth: Dp
         get() = if (width.isNotNull() && width - modifier.padding.horizontal > 0.dp) width - modifier.padding.horizontal else 0.dp
-    val contentHeight
+    public val contentHeight: Dp
         get() = if (height.isNotNull() && height - modifier.padding.vertical > 0.dp) height - modifier.padding.vertical else 0.dp
 
     // 元素边界（包括内外边距）
-    val boxWidth get() = width + modifier.margin.horizontal
-    val boxHeight get() = height + modifier.margin.vertical
+    public val boxWidth: Dp get() = width + modifier.margin.horizontal
+    public val boxHeight: Dp get() = height + modifier.margin.vertical
 
     /**
      * 第一遍计算宽高
      * 包括手动指定宽高、由父元素继承宽高
      */
-    fun preMeasure() {
+    public fun preMeasure() {
         // 手动指定宽高
         if (width.isNull() && modifier.width.isNotNull())
             width = modifier.width
@@ -103,7 +103,7 @@ abstract class Layout(
 /**
  *  Layout DSL
  */
-inline fun <T : Layout> Layout.Layout(
+public inline fun <T : Layout> Layout.Layout(
     layout: T,
     content: T.() -> Unit
 ) {
@@ -117,7 +117,7 @@ inline fun <T : Layout> Layout.Layout(
 /**
  * 布局位置
  */
-data class LayoutPosition(
+public data class LayoutPosition(
     var x: Dp = Dp.NULL,
     var y: Dp = Dp.NULL
 )
@@ -125,7 +125,7 @@ data class LayoutPosition(
 /**
  * 边界，用于限制子元素
  */
-data class LayoutBounds(
+public data class LayoutBounds(
     val left: Dp,
     val top: Dp,
     val right: Dp,
@@ -134,8 +134,8 @@ data class LayoutBounds(
     val width: Dp get() = right - left
     val height: Dp get() = bottom - top
 
-    companion object {
-        fun makeXYWH(left: Dp = 0.dp, top: Dp = 0.dp, width: Dp = 0.dp, height: Dp = 0.dp): LayoutBounds {
+    public companion object {
+        public fun makeXYWH(left: Dp = 0.dp, top: Dp = 0.dp, width: Dp = 0.dp, height: Dp = 0.dp): LayoutBounds {
             require(width >= 0.dp) { "width require >= 0, current: $width" }
             require(height >= 0.dp) { "height require >= 0, current: $height" }
             return LayoutBounds(left, top, left + width, top + height)
@@ -147,7 +147,7 @@ data class LayoutBounds(
 /**
  * 绘制盒子
  */
-fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}) {
+public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}) {
 
     // 圆角
     val radius: FloatArray = if (modifier.border == null) floatArrayOf(0f, 0f, 0f, 0f)

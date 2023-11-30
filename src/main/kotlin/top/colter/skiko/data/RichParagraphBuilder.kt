@@ -7,19 +7,45 @@ import kotlin.reflect.full.declaredMemberProperties
 
 
 /**
- * 富文本构造器
+ * ## 富文本构造器
+ *
+ * [defaultStyle] 设置默认样式
+ *
+ * ### 方法
+ * [addRichText] 添加富文本 [RichText]
+ *
+ * [addText] 添加文本、样式
+ *
+ * [addEmoji] 添加emoji，可指定emoji图片
+ *
+ * [wrap] 主动换行
+ *
+ * [build] 构建
+ *
+ * ### 例子
+ * ```kotlin
+ * val style = TextStyle().setColor(Color.BLACK)
+ * val paragraph = RichParagraphBuilder(style)
+ *             .addText("文字混排测试")
+ *             .addText("自定义文字样式", style.setColor(Color.RED))
+ *             .wrap()
+ *             .addEmoji("[emoji]", emojiImg)
+ *             .addText("😍❤️", style.setFontFamily(emojiFont))
+ *             .build()
+ * ```
+ *
  */
-class RichParagraphBuilder private constructor(
+public class RichParagraphBuilder private constructor(
     private val  defaultStyle: TextStyle,
     private val lines: MutableList<RichLine>,
     private var line: MutableList<RichText>,
 ) {
-    constructor(defaultStyle: TextStyle): this(defaultStyle.clone(), mutableListOf(), mutableListOf())
+    public constructor(defaultStyle: TextStyle): this(defaultStyle.clone(), mutableListOf(), mutableListOf())
 
     /**
      * 添加富文本
      */
-    fun addRichText(text: RichText): RichParagraphBuilder {
+    public fun addRichText(text: RichText): RichParagraphBuilder {
         line.add(text)
         return this
     }
@@ -27,21 +53,21 @@ class RichParagraphBuilder private constructor(
     /**
      * 添加文本、样式
      */
-    fun addText(text: String, style: TextStyle? = null): RichParagraphBuilder {
+    public fun addText(text: String, style: TextStyle? = null): RichParagraphBuilder {
         return addRichText(RichText.Text(text, style?.clone()))
     }
 
     /**
      * 添加emoji，可指定emoji图片
      */
-    fun addEmoji(value: String, img: Image, style: TextStyle? = null): RichParagraphBuilder {
+    public fun addEmoji(value: String, img: Image, style: TextStyle? = null): RichParagraphBuilder {
         return addRichText(RichText.Emoji(value, img, style?.clone()))
     }
 
     /**
      * 主动换行
      */
-    fun wrap(): RichParagraphBuilder {
+    public fun wrap(): RichParagraphBuilder {
         lines.add(RichLine(line))
         line = mutableListOf()
         return this
@@ -50,7 +76,7 @@ class RichParagraphBuilder private constructor(
     /**
      * 构建
      */
-    fun build(): RichParagraph {
+    public fun build(): RichParagraph {
         if (line.isNotEmpty()) wrap()
         return RichParagraph(defaultStyle, lines)
     }

@@ -1,15 +1,27 @@
 plugins {
-    kotlin("jvm") version "1.7.20"
-    id("me.him188.maven-central-publish") version "1.0.0-dev-3"
+    kotlin("jvm") version "1.9.0"
+//    id("me.him188.maven-central-publish") version "1.0.0"
+    id("maven-publish")
 }
 
 group = "top.colter.skiko"
 version = "0.0.1"
 
-mavenCentralPublish {
-    useCentralS01()
-    singleDevGithubProject("Colter23", "skiko-layout")
-    licenseFromGitHubProject("MIT")
+//mavenCentralPublish {
+//    useCentralS01()
+//    singleDevGithubProject("Colter23", "skiko-layout")
+//    licenseFromGitHubProject("MIT")
+//}
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "top.colter.skiko"
+            artifactId = "skiko-layout"
+            version = "0.0.1"
+
+            from(components["kotlin"])
+        }
+    }
 }
 
 repositories {
@@ -55,6 +67,9 @@ java {
     targetCompatibility = JavaVersion.VERSION_11
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions.jvmTarget = "11"
+kotlin {
+    explicitApi()
+    target.compilations.all {
+        kotlinOptions.jvmTarget = "11"
+    }
 }

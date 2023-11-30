@@ -27,8 +27,8 @@ dp 默认与 px 1:1 转换
 可通过 `Dp.factor` 调整整体转换比例
 
 ## 元素
-### 布局元素
 
+### 布局元素
 视图 `View` 元素最外层 最好指定宽或高    
 列 `Column` 内部元素会自动向下排列    
 行 `Row` 内部元素会自动向右排列    
@@ -56,7 +56,7 @@ dp 默认与 px 1:1 转换
 按比例继承父元素高度 `fillRatioHeight`    
 内边距 `padding`    
 外边距 `margin`    
-背景 `background` (暂时没用)    
+背景 `background` (仅单色背景)    
 边框 `border`    
 阴影 `shadows`    
 

@@ -13,7 +13,7 @@ import top.colter.skiko.data.place
  *
  * 最好指定高度 [Modifier.height] / [Modifier.fillMaxHeight]
  */
-inline fun Layout.Row(
+public inline fun Layout.Row(
     modifier: Modifier = Modifier().fillMaxHeight(),
     alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
     content: RowLayout.() -> Unit
@@ -28,8 +28,8 @@ inline fun Layout.Row(
     )
 }
 
-class RowLayout(
-    val alignment: LayoutAlignment,
+public class RowLayout(
+    public val alignment: LayoutAlignment,
     modifier: Modifier,
     parentLayout: Layout?
 ) : Layout(modifier, parentLayout) {

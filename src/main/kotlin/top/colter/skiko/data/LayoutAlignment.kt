@@ -7,7 +7,7 @@ import top.colter.skiko.layout.LayoutPosition
 
 
 /**
- * 布局对齐方式
+ * ## 布局对齐方式
  *
  * [TOP_LEFT] ↖
  * [TOP_CENTER] ↑
@@ -21,25 +21,34 @@ import top.colter.skiko.layout.LayoutPosition
  * [BOTTOM_CENTER] ↓
  * [BOTTOM_RIGHT] ↘
  */
-class LayoutAlignment private constructor(
-    val horizontal: AxisAlignment,
-    val vertical: AxisAlignment
+public class LayoutAlignment private constructor(
+    public val horizontal: AxisAlignment,
+    public val vertical: AxisAlignment
 ) {
-    companion object {
-        val TOP_LEFT = LayoutAlignment(horizontal = AxisAlignment.START, vertical = AxisAlignment.START)
-        val TOP_CENTER = LayoutAlignment(horizontal = AxisAlignment.CENTER, vertical = AxisAlignment.START)
-        val TOP_RIGHT = LayoutAlignment(horizontal = AxisAlignment.END, vertical = AxisAlignment.START)
-        val CENTER_LEFT = LayoutAlignment(horizontal = AxisAlignment.START, vertical = AxisAlignment.CENTER)
-        val CENTER = LayoutAlignment(horizontal = AxisAlignment.CENTER, vertical = AxisAlignment.CENTER)
-        val CENTER_RIGHT = LayoutAlignment(horizontal = AxisAlignment.END, vertical = AxisAlignment.CENTER)
-        val BOTTOM_LEFT = LayoutAlignment(horizontal = AxisAlignment.START, vertical = AxisAlignment.END)
-        val BOTTOM_CENTER = LayoutAlignment(horizontal = AxisAlignment.CENTER, vertical = AxisAlignment.END)
-        val BOTTOM_RIGHT = LayoutAlignment(horizontal = AxisAlignment.END, vertical = AxisAlignment.END)
+    public companion object {
+        public val TOP_LEFT: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.START, vertical = AxisAlignment.START)
+        public val TOP_CENTER: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.CENTER, vertical = AxisAlignment.START)
+        public val TOP_RIGHT: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.END, vertical = AxisAlignment.START)
+        public val CENTER_LEFT: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.START, vertical = AxisAlignment.CENTER)
+        public val CENTER: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.CENTER, vertical = AxisAlignment.CENTER)
+        public val CENTER_RIGHT: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.END, vertical = AxisAlignment.CENTER)
+        public val BOTTOM_LEFT: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.START, vertical = AxisAlignment.END)
+        public val BOTTOM_CENTER: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.CENTER, vertical = AxisAlignment.END)
+        public val BOTTOM_RIGHT: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.END, vertical = AxisAlignment.END)
     }
 
 }
 
-enum class AxisAlignment {
+/**
+ * ## 对齐方式
+ *
+ * [START] 左对齐
+ *
+ * [CENTER] 居中
+ *
+ * [END] 右对齐
+ */
+public enum class AxisAlignment {
     START,
     CENTER,
     END
@@ -63,7 +72,7 @@ enum class AxisAlignment {
 //    }
 //}
 
-fun AxisAlignment.align(isHorizontal: Boolean, width: Dp, height: Dp, modifier: Modifier, bounds: LayoutBounds): Dp {
+public fun AxisAlignment.align(isHorizontal: Boolean, width: Dp, height: Dp, modifier: Modifier, bounds: LayoutBounds): Dp {
     val start = if (isHorizontal) bounds.left else bounds.top
     val boundsWidth = if (isHorizontal) bounds.width else bounds.height
     val w = if (isHorizontal) width else height
@@ -78,7 +87,7 @@ fun AxisAlignment.align(isHorizontal: Boolean, width: Dp, height: Dp, modifier: 
     }
 }
 
-fun LayoutAlignment.place(width: Dp, height: Dp, modifier: Modifier, bounds: LayoutBounds): LayoutPosition {
+public fun LayoutAlignment.place(width: Dp, height: Dp, modifier: Modifier, bounds: LayoutBounds): LayoutPosition {
     return LayoutPosition(
         x = this.horizontal.align(true, width, height, modifier, bounds),
         y = this.vertical.align(false, width, height, modifier, bounds),
