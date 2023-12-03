@@ -5,6 +5,7 @@ import org.jetbrains.skia.paragraph.*
 import top.colter.skiko.*
 import top.colter.skiko.data.LayoutAlignment
 import top.colter.skiko.data.place
+import top.colter.skiko.data.toAlignment
 
 
 /**
@@ -43,8 +44,8 @@ public fun Layout.Text(
 public fun Layout.Text(
     text: String,
     textStyle: TextStyle,
-    alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
     maxLinesCount: Int = 1,
+    alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
     modifier: Modifier = Modifier(),
 ) {
     Layout(
@@ -72,7 +73,7 @@ public class TextLayout(
     private val paragraphStyle = ParagraphStyle().apply {
         maxLinesCount = this@TextLayout.maxLinesCount
         ellipsis = "..."
-        alignment = Alignment.START // this@TextLayout.alignment.toAlignment()
+        alignment = this@TextLayout.alignment.toAlignment()
         textStyle = this@TextLayout.textStyle
     }
 
@@ -101,7 +102,7 @@ public class TextLayout(
 
     override fun place(bounds: LayoutBounds) {
         // 确定当前元素位置
-        position = alignment.place(width, height, modifier, bounds)
+        position = LayoutAlignment.CENTER_LEFT.place(width, height, modifier, bounds)
     }
 
     override fun draw(canvas: Canvas) {

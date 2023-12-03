@@ -1,5 +1,6 @@
 package top.colter.skiko.data
 
+import org.jetbrains.skia.paragraph.Alignment
 import top.colter.skiko.Dp
 import top.colter.skiko.Modifier
 import top.colter.skiko.layout.LayoutBounds
@@ -54,23 +55,23 @@ public enum class AxisAlignment {
     END
 }
 
-//fun LayoutAlignment.toAlignment(): Alignment {
-//    return when (this) {
-//        LayoutAlignment.TOP_LEFT,
-//        LayoutAlignment.CENTER_LEFT,
-//        LayoutAlignment.BOTTOM_LEFT -> Alignment.START
-//
-//        LayoutAlignment.TOP_CENTER,
-//        LayoutAlignment.CENTER,
-//        LayoutAlignment.BOTTOM_CENTER -> Alignment.CENTER
-//
-//        LayoutAlignment.TOP_RIGHT,
-//        LayoutAlignment.CENTER_RIGHT,
-//        LayoutAlignment.BOTTOM_RIGHT -> Alignment.END
-//
-//        else -> Alignment.START
-//    }
-//}
+public fun LayoutAlignment.toAlignment(): Alignment {
+    return when (this) {
+        LayoutAlignment.TOP_LEFT,
+        LayoutAlignment.CENTER_LEFT,
+        LayoutAlignment.BOTTOM_LEFT -> Alignment.START
+
+        LayoutAlignment.TOP_CENTER,
+        LayoutAlignment.CENTER,
+        LayoutAlignment.BOTTOM_CENTER -> Alignment.CENTER
+
+        LayoutAlignment.TOP_RIGHT,
+        LayoutAlignment.CENTER_RIGHT,
+        LayoutAlignment.BOTTOM_RIGHT -> Alignment.END
+
+        else -> Alignment.START
+    }
+}
 
 public fun AxisAlignment.align(isHorizontal: Boolean, width: Dp, height: Dp, modifier: Modifier, bounds: LayoutBounds): Dp {
     val start = if (isHorizontal) bounds.left else bounds.top

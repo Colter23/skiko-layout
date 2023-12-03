@@ -31,12 +31,29 @@ public fun interface Drawable {
 }
 
 /**
+ * ## 环境变量
+ *
+ * 只操作当前节点，创建节点时会自动继承父节点的数据
+ */
+public interface Environment{
+    public fun containsEnv(key: String): Boolean
+    public fun getEnv(key: String): Any?
+    public fun getAllEnv(): Map<String, Any>?
+    public fun putEnv(key: String, value: Any)
+    public fun removeEnv(key: String): Any?
+}
+
+
+/**
  * 布局的抽象实现
  */
 public abstract class Layout(
     public var modifier: Modifier = Modifier(),
     public var parentLayout: Layout? = null
-) : Mensurable, Placeable, Drawable {
+) : Mensurable, Placeable, Drawable, Environment {
+
+    // 环境变量
+    private val environment: MutableMap<String, Any> = parentLayout?.getAllEnv()?.let { LinkedHashMap(it) } ?: LinkedHashMap()
 
     // 位置
     public var position: LayoutPosition = LayoutPosition()
@@ -97,6 +114,28 @@ public abstract class Layout(
             layout.draw(canvas)
         }
     }
+
+    override fun containsEnv(key: String): Boolean {
+        return environment.contains(key)
+    }
+
+    override fun getEnv(key: String): Any? {
+        return environment[key]
+    }
+
+    override fun getAllEnv(): Map<String, Any>? {
+        if (environment.isEmpty()) return null
+        return environment.toMap()
+    }
+
+    override fun putEnv(key: String, value: Any) {
+        environment[key] = value
+    }
+
+    override fun removeEnv(key: String): Any? {
+        return environment.remove(key)
+    }
+
 }
 
 
