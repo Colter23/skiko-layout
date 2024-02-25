@@ -11,14 +11,14 @@
 ## 使用
 ### Gradle
 ```kotlin
-implementation("top.colter.skiko:skiko-layout:0.0.1")
+implementation("top.colter.skiko:skiko-layout:0.0.2")
 ```
 ### Maven
 ```xml
 <dependency>
     <groupId>top.colter.skiko</groupId>
     <artifactId>skiko-layout</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
 </dependency>
 ```
 ## 单位

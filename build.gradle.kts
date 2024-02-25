@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "top.colter.skiko"
-version = "0.0.1"
+version = "0.0.2"
 
 //mavenCentralPublish {
 //    useCentralS01()
@@ -17,7 +17,7 @@ publishing {
         create<MavenPublication>("maven") {
             groupId = "top.colter.skiko"
             artifactId = "skiko-layout"
-            version = "0.0.1"
+            version = "0.0.2"
 
             from(components["kotlin"])
         }
