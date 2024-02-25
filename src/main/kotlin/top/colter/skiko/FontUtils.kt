@@ -15,6 +15,7 @@ public object FontUtils {
     public var emojiFont: Typeface? = null
 
     private fun registerTypeface(typeface: Typeface?, alias: String? = null) {
+        if (defaultFont == null) defaultFont = typeface
         fontProvider.registerTypeface(typeface)
         if (alias != null) fontProvider.registerTypeface(typeface, alias)
     }
@@ -38,7 +39,6 @@ public object FontUtils {
 
     public fun loadTypeface(path: String, alias: String? = null, index: Int = 0): Typeface {
         val face = Typeface.makeFromFile(path, index)
-        if (defaultFont == null) defaultFont = face
         registerTypeface(face, alias)
         return face
     }
@@ -47,6 +47,11 @@ public object FontUtils {
         val face = Typeface.makeFromData(data, index)
         registerTypeface(face)
         return face
+    }
+
+    public fun loadTypeface(typeface: Typeface): Typeface {
+        registerTypeface(typeface)
+        return typeface
     }
 
 }

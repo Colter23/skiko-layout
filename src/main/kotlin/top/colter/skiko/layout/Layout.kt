@@ -217,7 +217,7 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
                     x0 = rrect.left,
                     y0 = rrect.top,
                     x1 = rrect.right,
-                    y1 = rrect.top,
+                    y1 = rrect.bottom,
                     colors = bg.gradient.colors.toIntArray(),
                     positions = bg.gradient.positions?.toFloatArray()
                 )
