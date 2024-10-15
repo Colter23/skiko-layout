@@ -72,6 +72,10 @@ public fun RichParagraph.layout(width: Float): RichParagraph {
                     for (point in node.value.codePoints()) {
                         val c = String(intArrayOf(point), 0, intArrayOf(point).size)
                         if (c == "\n") {
+                            if (tempText.isBlank()) {
+                                maxHeight = TextLine.make("|", font).height
+                                tempText.append(' ')
+                            }
                             wrapText(tempText, node.style)
                         } else {
                             val charLine = TextLine.make(c, font)

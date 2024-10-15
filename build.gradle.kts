@@ -1,17 +1,11 @@
 plugins {
     kotlin("jvm") version "1.9.0"
-//    id("me.him188.maven-central-publish") version "1.0.0"
     id("maven-publish")
 }
 
 group = "top.colter.skiko"
 version = "0.0.2"
 
-//mavenCentralPublish {
-//    useCentralS01()
-//    singleDevGithubProject("Colter23", "skiko-layout")
-//    licenseFromGitHubProject("MIT")
-//}
 publishing {
     publications {
         create<MavenPublication>("maven") {
