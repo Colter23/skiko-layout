@@ -243,5 +243,5 @@ fun Layout.RichParagraphTest(modifier: Modifier) {
 - [ ] 背景图片
 - [ ] 背景渐变色
 - [ ] 主题
-- [ ] 提取图片主题色, 使用 [Material Color Utilities](https://github.com/material-foundation/material-color-utilities)
+- [ ] ~~提取图片主题色, 使用 [Material Color Utilities](https://github.com/material-foundation/material-color-utilities)~~ (效果不佳，暂时放弃)
 - [ ] more...

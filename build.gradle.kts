@@ -1,22 +1,11 @@
 plugins {
     kotlin("jvm") version "1.9.0"
     id("maven-publish")
+    id("signing")
 }
 
 group = "top.colter.skiko"
 version = "0.0.2"
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            groupId = "top.colter.skiko"
-            artifactId = "skiko-layout"
-            version = "0.0.2"
-
-            from(components["kotlin"])
-        }
-    }
-}
 
 repositories {
     mavenLocal()
@@ -59,6 +48,7 @@ tasks.test {
 java {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
+    withJavadocJar()
 }
 
 kotlin {
@@ -66,4 +56,54 @@ kotlin {
     target.compilations.all {
         kotlinOptions.jvmTarget = "11"
     }
+
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            artifact(tasks.getByName("javadocJar"))
+            artifact(tasks.getByName("kotlinSourcesJar"))
+            from(components["kotlin"])
+
+            pom {
+                groupId = "top.colter.skiko"
+                artifactId = "skiko-layout"
+                version = "0.0.2"
+                name = "Skiko Layout"
+                description = "Convenient use of Skiko for static layout without calculating position and size."
+                url = "https://github.com/Colter23/skiko-layout"
+                licenses {
+                    license {
+                        name = "MIT"
+                        url = "https://github.com/Colter23/skiko-layout/blob/main/LICENSE"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "Colter23"
+                        name = "Colter"
+                    }
+                }
+                scm {
+                    connection = "scm:git:git://github.com/Colter23/skiko-layout"
+                    url = "https://github.com/Colter23/skiko-layout"
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
+            credentials {
+                username=properties["ossrhUsername"].toString()
+                password=properties["ossrhPassword"].toString()
+            }
+        }
+    }
+}
+
+signing {
+    sign(publishing.publications["maven"])
 }
