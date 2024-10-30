@@ -30,22 +30,22 @@ public object FontUtils {
         }
     }
 
-    public fun loadEmojiTypeface(path: String): Typeface {
-        val face = Typeface.makeFromFile(path, 0)
+    public fun loadEmojiTypeface(path: String): Typeface? {
+        val face = fontMgr.makeFromFile(path, 0)
         if (emojiFont == null) emojiFont = face
-        registerTypeface(face, null)
+        if (face != null) registerTypeface(face, null)
         return face
     }
 
-    public fun loadTypeface(path: String, alias: String? = null, index: Int = 0): Typeface {
-        val face = Typeface.makeFromFile(path, index)
-        registerTypeface(face, alias)
+    public fun loadTypeface(path: String, alias: String? = null, index: Int = 0): Typeface? {
+        val face = fontMgr.makeFromFile(path, index)
+        if (face != null) registerTypeface(face, alias)
         return face
     }
 
-    public fun loadTypeface(data: Data, index: Int = 0): Typeface {
-        val face = Typeface.makeFromData(data, index)
-        registerTypeface(face)
+    public fun loadTypeface(data: Data, index: Int = 0): Typeface? {
+        val face = fontMgr.makeFromData(data, index)
+        if (face != null) registerTypeface(face)
         return face
     }
 

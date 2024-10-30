@@ -40,6 +40,9 @@ public fun Layout.Text(
 
 /**
  * ## 纯文本
+ *
+ * 由于文本不是一个完整的盒子，如果达不到想要的效果，可以试着在外面套一层 [Box]
+ *
  */
 public fun Layout.Text(
     text: String,
@@ -48,6 +51,14 @@ public fun Layout.Text(
     alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
     modifier: Modifier = Modifier(),
 ) {
+    // 检查字体是否在字体集中
+    if (textStyle.typeface != null) {
+        val fonts = FontUtils.fonts.findTypefaces(arrayOf(textStyle.typeface!!.familyName), FontStyle.NORMAL)
+        if (fonts.isEmpty()) {
+            FontUtils.loadTypeface(textStyle.typeface!!)
+        }
+    }
+
     Layout(
         layout = TextLayout(
             text = text,
