@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.9.0"
+    kotlin("jvm") version "2.0.21"
     id("maven-publish")
     id("signing")
 }
@@ -14,10 +14,10 @@ repositories {
 }
 
 dependencies {
-    val skikoVersion = "0.7.71"
+    val skikoVersion = "0.8.16"
 
-    api("org.jetbrains.skiko:skiko-awt:$skikoVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta")
+    compileOnly("org.jetbrains.skiko:skiko-awt:$skikoVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 
     implementation(kotlin("reflect"))
 
@@ -59,6 +59,8 @@ kotlin {
 
 }
 
+val ver = version.toString()
+
 publishing {
     publications {
         create<MavenPublication>("maven") {
@@ -66,28 +68,29 @@ publishing {
             artifact(tasks.getByName("kotlinSourcesJar"))
             from(components["kotlin"])
 
+            groupId = "top.colter.skiko"
+            artifactId = "skiko-layout"
+            version = ver
+
             pom {
-                groupId = "top.colter.skiko"
-                artifactId = "skiko-layout"
-                version = "0.0.2"
-                name = "Skiko Layout"
-                description = "Convenient use of Skiko for static layout without calculating position and size."
-                url = "https://github.com/Colter23/skiko-layout"
+                name.set("Skiko Layout")
+                description.set("Convenient use of Skiko for static layout without calculating position and size.")
+                url.set("https://github.com/Colter23/skiko-layout")
                 licenses {
                     license {
-                        name = "MIT"
-                        url = "https://github.com/Colter23/skiko-layout/blob/main/LICENSE"
+                        name.set("MIT License")
+                        url.set("https://github.com/Colter23/skiko-layout/blob/main/LICENSE")
                     }
                 }
                 developers {
                     developer {
-                        id = "Colter23"
-                        name = "Colter"
+                        id.set("Colter23")
+                        name.set("Colter")
                     }
                 }
                 scm {
-                    connection = "scm:git:git://github.com/Colter23/skiko-layout"
-                    url = "https://github.com/Colter23/skiko-layout"
+                    connection.set("scm:git:git://github.com/Colter23/skiko-layout")
+                    url.set("https://github.com/Colter23/skiko-layout")
                 }
             }
         }
