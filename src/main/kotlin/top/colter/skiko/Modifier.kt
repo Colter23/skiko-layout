@@ -136,7 +136,7 @@ public fun Modifier.fillWidth(): Modifier = apply { fillWidth = true }
 public fun Modifier.fillHeight(): Modifier = apply { fillHeight = true }
 
 public fun Modifier.background(background: Background): Modifier = apply { this.background = background }
-public fun Modifier.background(color: Int = Color.WHITE, gradient: Gradient? = null, image: Image? = null): Modifier {
+public fun Modifier.background(color: Int? = null, gradient: Gradient? = null, image: Image? = null): Modifier {
     return background(Background(color, gradient, image))
 }
 

@@ -298,4 +298,27 @@ internal class DrawTest {
         }
     }
 
+    @Test
+    fun `test background image`(): Unit = runBlocking {
+
+        val bg1 = loadTestImage("image", "bg1.jpg")
+
+        View(
+            file = testOutput.resolve("background.png"),
+            modifier = Modifier()
+                .width(1000.dp)
+                .padding(20.dp)
+                .background(Color.makeRGB(255, 205, 204))
+        ) {
+            Box (
+                modifier = Modifier()
+                    .fillMaxWidth()
+                    .height(500.dp)
+//                    .background(color = Color.BLACK.withAlpha(0.3f), image = bg1)
+                    .background(gradient = Gradient(LayoutAlignment.TOP_LEFT, LayoutAlignment.BOTTOM_RIGHT, listOf(Color.BLACK.withAlpha(1f), Color.BLACK.withAlpha(0f))), image = bg1)
+                    .border(2.dp, 10.dp)
+            ) { }
+        }
+    }
+
 }

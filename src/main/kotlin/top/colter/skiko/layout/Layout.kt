@@ -2,6 +2,7 @@ package top.colter.skiko.layout
 
 import org.jetbrains.skia.*
 import top.colter.skiko.*
+import top.colter.skiko.data.AxisAlignment
 
 
 /**
@@ -210,19 +211,55 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
     // 绘制背景
     if (modifier.background != null) {
         val bg = modifier.background!!
-        canvas.drawRRect(rrect, Paint().apply {
-            color = bg.color
-            if (bg.gradient != null) {
-                shader = Shader.makeLinearGradient(
-                    x0 = rrect.left,
-                    y0 = rrect.top,
-                    x1 = rrect.right,
-                    y1 = rrect.bottom,
-                    colors = bg.gradient.colors.toIntArray(),
-                    positions = bg.gradient.positions?.toFloatArray()
-                )
+
+        // 绘制背景图片
+        if (bg.image != null) {
+            canvas.drawImageClip(bg.image, rrect)
+        }
+
+        // 绘制渐变色
+        if (bg.gradient != null) {
+            val start = bg.gradient.start
+            val end = bg.gradient.end
+
+            val x0 = when (start.horizontal) {
+                AxisAlignment.START -> rrect.left
+                AxisAlignment.CENTER -> rrect.left + (rrect.right - rrect.left) / 2
+                AxisAlignment.END -> rrect.right
             }
-        })
+            val y0 = when (start.vertical) {
+                AxisAlignment.START -> rrect.top
+                AxisAlignment.CENTER -> rrect.top + (rrect.bottom - rrect.top) / 2
+                AxisAlignment.END -> rrect.bottom
+            }
+            val x1 = when (end.horizontal) {
+                AxisAlignment.START -> rrect.left
+                AxisAlignment.CENTER -> rrect.left + (rrect.right - rrect.left) / 2
+                AxisAlignment.END -> rrect.right
+            }
+            val y1 = when (end.vertical) {
+                AxisAlignment.START -> rrect.top
+                AxisAlignment.CENTER -> rrect.top + (rrect.bottom - rrect.top) / 2
+                AxisAlignment.END -> rrect.bottom
+            }
+            canvas.drawRRect(rrect, Paint().apply {
+                shader = Shader.makeLinearGradient(
+                    x0 = x0,
+                    y0 = y0,
+                    x1 = x1,
+                    y1 = y1,
+                    colors = bg.gradient.colors.toIntArray(),
+                )
+            })
+        }
+
+        // 绘制纯色
+        if (bg.color != null) {
+            canvas.drawRRect(rrect, Paint().apply {
+                color = bg.color
+            })
+        }
+
     }
 
     // 绘制内容

@@ -56,7 +56,7 @@ dp 默认与 px 1:1 转换
 按比例继承父元素高度 `fillRatioHeight`    
 内边距 `padding`    
 外边距 `margin`    
-背景 `background` (仅单色背景)    
+背景 `background`  
 边框 `border`    
 阴影 `shadows`    
 
@@ -240,8 +240,8 @@ fun Layout.RichParagraphTest(modifier: Modifier) {
 ```
 
 ## TODO
-- [ ] 背景图片
-- [ ] 背景渐变色
+- [x] 背景图片
+- [x] 背景渐变色
 - [ ] 主题
 - [ ] ~~提取图片主题色, 使用 [Material Color Utilities](https://github.com/material-foundation/material-color-utilities)~~ (效果不佳，暂时放弃)
 - [ ] more...
