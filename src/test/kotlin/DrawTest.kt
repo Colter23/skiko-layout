@@ -7,6 +7,9 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import top.colter.skiko.*
+import top.colter.skiko.layout.Image
+import top.colter.skiko.layout.RichText
+import top.colter.skiko.layout.Text
 import top.colter.skiko.data.*
 import top.colter.skiko.layout.*
 import java.io.File
@@ -320,5 +323,65 @@ internal class DrawTest {
             ) { }
         }
     }
+
+    @Test
+    fun `test canvas`(): Unit = runBlocking {
+        View(
+            file = testOutput.resolve("canvas.png"),
+            modifier = Modifier()
+                .width(1000.dp)
+                .padding(20.dp)
+                .background(Color.makeRGB(255, 205, 204))
+        ) {
+            Canvas (
+                modifier = Modifier().fillMaxWidth().height(500.dp).background(color = Color.WHITE)
+            ) { rect ->
+
+                val paint = Paint().apply {
+                    color = Color.RED
+                    mode = PaintMode.STROKE
+                    strokeWidth = 2f
+                }
+
+                drawLine(rect.left, rect.top, rect.right, rect.bottom, paint)
+                drawLine(rect.right, rect.top, rect.left, rect.bottom, paint)
+                drawCircle(rect.centerX(), rect.centerY(), 100f, paint)
+
+            }
+        }
+    }
+
+    @Test
+    fun `test text1`(): Unit = runBlocking {
+
+        View(
+            file = testOutput.resolve("text1.png"),
+            modifier = Modifier()
+                .width(500.dp)
+                .padding(20.dp)
+                .background(Color.WHITE)
+        ) {
+            Column{
+                Text(
+                    text = "不指定宽度测试",
+                    color = Color.BLACK,
+                    fontSize = 30.dp,
+                    modifier = Modifier()
+                        .border(2.dp, 0.dp, Color.RED)
+                        .margin(bottom = 20.dp)
+                )
+                Text(
+                    text = "指定宽度测试",
+                    color = Color.BLACK,
+                    fontSize = 30.dp,
+                    modifier = Modifier()
+                        .border(2.dp, 0.dp, Color.GREEN)
+                        .width(300.dp)
+                )
+            }
+
+        }
+    }
+
 
 }
