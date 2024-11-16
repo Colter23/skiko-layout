@@ -11,8 +11,6 @@ import top.colter.skiko.data.toAlignment
 /**
  * ## 纯文本
  *
- * 由于文本不是一个完整的盒子，如果达不到想要的效果，可以试着在外面套一层 [Box]
- *
  */
 public fun Layout.Text(
     text: String,
@@ -40,8 +38,6 @@ public fun Layout.Text(
 
 /**
  * ## 纯文本
- *
- * 由于文本不是一个完整的盒子，如果达不到想要的效果，可以试着在外面套一层 [Box]
  *
  */
 public fun Layout.Text(
@@ -88,9 +84,8 @@ public class TextLayout(
         textStyle = this@TextLayout.textStyle
     }
 
-    private val paragraph = ParagraphBuilder(paragraphStyle, FontUtils.fonts).addText(text).build()
     private var layoutParagraph: Paragraph? = null
-
+    private var layoutTextLine: TextLine? = null
 
     override fun measure(deep: Boolean) {
         // 第一遍计算宽高
@@ -102,11 +97,18 @@ public class TextLayout(
         else if (!modifier.fillWidth) parentLayout!!.modifier.contentWidth.px - modifier.margin.horizontal.px
         else 0f
 
-        // 进行布局 确定高度
+        // 进行布局 如果可以确定宽度, 就用 Paragraph, 确认不了宽度就用 TextLine
         if (maxWidth != 0f) {
+            val paragraph = ParagraphBuilder(paragraphStyle, FontUtils.fonts).addText(text).build()
             layoutParagraph = paragraph.layout(maxWidth)
             if (width.isNull()) width = layoutParagraph!!.maxIntrinsicWidth.toDp()
             if (height.isNull()) height = layoutParagraph!!.height.toDp()
+        }else {
+            val font = Font(FontUtils.matchFamily(textStyle.fontFamilies.first()).matchStyle(textStyle.fontStyle))
+            font.size = textStyle.fontSize
+            layoutTextLine = TextLine.make(text, font)
+            if (width.isNull()) width = layoutTextLine!!.width.toDp()
+            if (height.isNull()) height = layoutTextLine!!.height.toDp()
         }
 
     }
@@ -117,8 +119,18 @@ public class TextLayout(
     }
 
     override fun draw(canvas: Canvas) {
+        // 绘制盒子
+        drawBgBox(canvas)
         // 绘制文本
         layoutParagraph?.paint(canvas, position.x.px, position.y.px)
+        if (layoutParagraph == null) {
+            layoutTextLine?.let {
+                val textY = position.y.px + it.capHeight + ((it.height - it.capHeight) / 2)
+                canvas.drawTextLine(it, position.x.px, textY, Paint().apply {
+                    color = textStyle.color
+                })
+            }
+        }
     }
 
 }
