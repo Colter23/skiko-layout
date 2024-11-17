@@ -1,16 +1,31 @@
 package top.colter.skiko.layout
 
-import org.jetbrains.skia.Canvas
-import org.jetbrains.skia.Rect
+import org.jetbrains.skia.*
 import top.colter.skiko.*
 import top.colter.skiko.data.LayoutAlignment
 import top.colter.skiko.data.place
 
 
 /**
- * ## 画板
+ * ## 画板元素
  *
  * 最好指定宽和高 [Modifier.width] / [Modifier.fillMaxWidth] / [Modifier.height] / [Modifier.fillMaxHeight]
+ *
+ * ### 例子
+ * ```kotlin
+ * Canvas (
+ *     modifier = Modifier().fillMaxWidth().height(500.dp).background(color = Color.WHITE)
+ * ) { rect ->
+ *     val paint = Paint().apply { color = Color.RED }
+ *     drawLine(rect.left, rect.top, rect.right, rect.bottom, paint)
+ *     drawLine(rect.right, rect.top, rect.left, rect.bottom, paint)
+ *     drawCircle(rect.centerX(), rect.centerY(), 100f, paint)
+ * }
+ * ```
+ *
+ * @param modifier 样式
+ * @param alignment 对齐
+ * @param canvasContent 画板内容
  */
 public fun Layout.Canvas(
     modifier: Modifier = Modifier(),

@@ -4,13 +4,10 @@ package top.colter.skiko.data
 /**
  * ## 常用比例
  *
- * [COVER_1] 封面 16/9
- *
- * [COVER_2] 封面 16/10
- *
- * [BANNER] 横幅 10/3
- *
- * [SQUARE] 方形 1/1
+ * @property COVER_1 封面 16/9
+ * @property COVER_2 封面 16/10
+ * @property BANNER 横幅 10/3
+ * @property SQUARE 方形 1/1
  */
 public object Ratio {
 

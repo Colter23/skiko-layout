@@ -9,15 +9,20 @@ import top.colter.skiko.data.Ratio
 
 
 /**
- * 图片元素
+ * ## 图片元素
  *
- * [ratio] 宽高比 如: 16f/10f。 为 0 时表示保持图片原比例。 可使用 [Ratio] 对象内置的比例
+ * [ratio] 宽高比 例: 16f/10f。为 0 时表示保持图片原比例。可使用 [Ratio] 对象内置的比例
+ *
+ * @param image 图片
+ * @param ratio 宽高比
+ * @param modifier 样式
+ * @param alignment 对齐
  */
 public fun Layout.Image(
     image: Image,
     ratio: Float = 0f,
-    alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
     modifier: Modifier = Modifier(),
+    alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT
 ) {
     Layout(
         layout = ImageLayout(
@@ -36,7 +41,7 @@ public class ImageLayout(
     public val ratio: Float,
     public val alignment: LayoutAlignment,
     modifier: Modifier,
-    parentLayout: Layout,
+    parentLayout: Layout
 ) : Layout(modifier, parentLayout) {
 
     override fun measure(deep: Boolean) {

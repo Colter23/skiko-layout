@@ -118,5 +118,11 @@ public fun Int.withAlpha(alpha: Float = 1f): Int {
  */
 public fun deg2Arc(deg: Int): Float = (deg * PI / 180).toFloat()
 
+/**
+ * 计算矩形横向中心
+ */
 public fun Rect.centerX(): Float = left + width / 2
+/**
+ * 计算矩形纵向中心
+ */
 public fun Rect.centerY(): Float = top + height / 2

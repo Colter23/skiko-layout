@@ -9,6 +9,11 @@ import java.io.File
 
 /**
  * ## 根布局
+ *
+ * @param fileStr 文件绝对路径
+ * @param modifier 样式
+ * @param alignment 对齐
+ * @param content 子元素内容
  */
 public inline fun View(
     fileStr: String,
@@ -21,6 +26,11 @@ public inline fun View(
 
 /**
  * ## 根布局
+ *
+ * @param file 文件
+ * @param modifier 样式
+ * @param alignment 对齐
+ * @param content 子元素内容
  */
 public inline fun View(
     file: File,
@@ -34,6 +44,12 @@ public inline fun View(
 
 /**
  * ## 根布局
+ *
+ * @param modifier 样式
+ * @param alignment 对齐
+ * @param content 子元素内容
+ *
+ * @return [Image]
  */
 public inline fun View(
     modifier: Modifier = Modifier(),

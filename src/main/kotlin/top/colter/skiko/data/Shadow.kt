@@ -4,11 +4,17 @@ import top.colter.skiko.px
 
 
 /**
- * 阴影
+ * ## 阴影
  *
  * 可直接使用内置的 Material Design Elevation [ELEVATION_1] ~ [ELEVATION_12]
  *
  * [elevations] 阴影列表
+ *
+ * @param offsetX X偏移
+ * @param offsetY Y便宜
+ * @param blur 模糊
+ * @param spread 扩散
+ * @param shadowColor 阴影颜色
  */
 public data class Shadow(
     val offsetX: Float,
@@ -87,6 +93,9 @@ public data class Shadow(
             Shadow(0.px, 9.px, 46.px, 8.px, color3),
         )
 
+        /**
+         * 包含 [ELEVATION_1] ~ [ELEVATION_12] 的列表
+         */
         public val elevations: List<List<Shadow>> = listOf(
             ELEVATION_1,
             ELEVATION_2,

@@ -22,6 +22,8 @@ public class RichLine(
 
 /**
  * 富文本文章
+ *
+ * 通过 [RichParagraphBuilder] 构建
  */
 public class RichParagraph(
     public val defaultStyle: TextStyle,

@@ -5,13 +5,14 @@ import top.colter.skiko.dp
 
 /**
  * ## 边距
- * [top] 上边距
- * [right] 右边距
- * [bottom] 下边距
- * [left] 左边距
  *
- * [horizontal] 水平边距
- * [vertical] 垂直边距
+ * @param top 上边距
+ * @param right 右边距
+ * @param bottom 下边距
+ * @param left 左边距
+ *
+ * @property horizontal 水平边距
+ * @property vertical 垂直边距
  */
 public data class Edge(
     val top: Dp = 0.dp,

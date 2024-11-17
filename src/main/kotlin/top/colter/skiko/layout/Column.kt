@@ -12,6 +12,10 @@ import top.colter.skiko.data.place
  * 内部元素会自动向下排列
  *
  * 最好指定宽度 [Modifier.width] / [Modifier.fillMaxWidth]
+ *
+ * @param modifier 样式
+ * @param alignment 对齐
+ * @param content 子元素内容
  */
 public inline fun Layout.Column(
     modifier: Modifier = Modifier().fillMaxWidth(),

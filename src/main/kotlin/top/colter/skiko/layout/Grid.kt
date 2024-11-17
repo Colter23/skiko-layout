@@ -9,13 +9,22 @@ import top.colter.skiko.data.place
 /**
  * ## 宫格布局
  *
- * 子元素尽量不要指定宽高
+ * 主要用于宫格图片
  *
- * [itemModifier] 可以为每个子元素设置样式，会与子元素自身的样式合并
+ * 当只有一个子元素时，宽高为子元素本身宽高
  *
- * [maxLineCount] 每行最多有几个元素
+ * 当子元素数量大于一，锁定宽高比例为1:1，子元素平分宽度
  *
- * [space] 元素之间的间隔，最好使用此属性设置间隔，不要使用 margin 和 padding
+ * 最好指定元素本身宽度，尽量不要指定子元素宽高
+ *
+ * 元素之间的间隔，最好使用 [space] 属性设置，不要使用 margin 和 padding
+ *
+ * @param maxLineCount 每行最多有几个元素
+ * @param space 元素之间的间隔
+ * @param modifier 样式
+ * @param itemModifier 子元素样式
+ * @param alignment 对齐
+ * @param content 子元素内容
  */
 public inline fun Layout.Grid(
     maxLineCount: Int = 3,

@@ -12,6 +12,15 @@ import kotlin.math.min
 /**
  * ## 纯文本
  *
+ * @param text 文本内容
+ * @param color 文本颜色
+ * @param fontSize 字体大小
+ * @param fontFamily 字体名
+ * @param fontStyle 字体样式
+ * @param maxLinesCount 最大行数
+ * @param alignment 外部对齐
+ * @param intrinsicAlignment 内部对齐
+ * @param modifier 样式
  */
 public fun Layout.Text(
     text: String,
@@ -22,7 +31,7 @@ public fun Layout.Text(
     maxLinesCount: Int = 1,
     alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
     intrinsicAlignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
-    modifier: Modifier = Modifier(),
+    modifier: Modifier = Modifier()
 ) {
     Text(
         text = text,
@@ -42,6 +51,12 @@ public fun Layout.Text(
 /**
  * ## 纯文本
  *
+ * @param text 文本内容
+ * @param textStyle 文本样式
+ * @param maxLinesCount 最大行数
+ * @param alignment 外部对齐
+ * @param intrinsicAlignment 内部对齐
+ * @param modifier 样式
  */
 public fun Layout.Text(
     text: String,
@@ -49,7 +64,7 @@ public fun Layout.Text(
     maxLinesCount: Int = 1,
     alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
     intrinsicAlignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
-    modifier: Modifier = Modifier(),
+    modifier: Modifier = Modifier()
 ) {
     // 检查字体是否在字体集中
     if (textStyle.typeface != null) {
@@ -80,7 +95,7 @@ public class TextLayout(
     public val intrinsicAlignment: LayoutAlignment,
     public val maxLinesCount: Int,
     modifier: Modifier,
-    parentLayout: Layout,
+    parentLayout: Layout
 ) : Layout(modifier, parentLayout) {
 
     private val paragraphStyle = ParagraphStyle().apply {

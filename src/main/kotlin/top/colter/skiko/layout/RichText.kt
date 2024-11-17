@@ -12,6 +12,11 @@ import top.colter.skiko.toDp
  * [paragraph] 文章 使用 [RichParagraphBuilder] 富文本构造器构建
  *
  * [maxLinesCount] 最大行数 默认 50 行
+ *
+ * @param paragraph 文章
+ * @param maxLinesCount 最大行数
+ * @param alignment 对齐
+ * @param modifier 样式
  */
 public fun Layout.RichText(
     paragraph: RichParagraph,

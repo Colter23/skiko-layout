@@ -12,6 +12,10 @@ import top.colter.skiko.data.place
  * 内部元素绝对定位
  *
  * 最好指定宽和高 [Modifier.width] / [Modifier.fillMaxWidth] / [Modifier.height] / [Modifier.fillMaxHeight]
+ *
+ * @param modifier 样式
+ * @param alignment 对齐
+ * @param content 子元素内容
  */
 public inline fun Layout.Box(
     modifier: Modifier = Modifier(),
