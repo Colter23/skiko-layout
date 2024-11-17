@@ -19,7 +19,7 @@ import top.colter.skiko.data.place
  */
 public inline fun Layout.Row(
     modifier: Modifier = Modifier().fillMaxHeight(),
-    alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
+    alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     content: RowLayout.() -> Unit
 ) {
     Layout(

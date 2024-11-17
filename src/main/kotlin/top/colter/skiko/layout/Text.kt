@@ -29,8 +29,8 @@ public fun Layout.Text(
     fontFamily: String = "Source Han Sans",
     fontStyle: FontStyle = FontStyle.NORMAL,
     maxLinesCount: Int = 1,
-    alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
-    intrinsicAlignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
+    alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
+    intrinsicAlignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     modifier: Modifier = Modifier()
 ) {
     Text(
@@ -62,8 +62,8 @@ public fun Layout.Text(
     text: String,
     textStyle: TextStyle,
     maxLinesCount: Int = 1,
-    alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
-    intrinsicAlignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
+    alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
+    intrinsicAlignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     modifier: Modifier = Modifier()
 ) {
     // 检查字体是否在字体集中

@@ -31,7 +31,7 @@ public inline fun Layout.Grid(
     space: Dp = 10.dp,
     modifier: Modifier = Modifier(),
     itemModifier: Modifier? = null,
-    alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
+    alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     content: GridLayout.() -> Unit
 ) {
     require(maxLineCount > 1) { "max line count require > 1" }

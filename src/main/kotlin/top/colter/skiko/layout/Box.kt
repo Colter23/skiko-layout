@@ -19,7 +19,7 @@ import top.colter.skiko.data.place
  */
 public inline fun Layout.Box(
     modifier: Modifier = Modifier(),
-    alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
+    alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     content: BoxLayout.() -> Unit = {}
 ) {
     Layout(

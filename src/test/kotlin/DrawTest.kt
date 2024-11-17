@@ -109,13 +109,13 @@ internal class DrawTest {
                                 .height(20.dp)
                                 .background(Color.YELLOW)
                                 .border(1.dp, 10.dp),
-                            alignment = LayoutAlignment.BOTTOM_RIGHT
+                            alignment = LayoutAlignment.RIGHT_BOTTOM
                         )
                     }
                     Column(Modifier().fillWidth().fillMaxHeight().padding(10.dp)) {
                         Box(Modifier().fillMaxWidth().fillHeight().background(Color.RED)) {
                             Box(Modifier().fillMaxWidth().fillMaxHeight()) {
-                                Text(text = "测试文字右对齐", fontSize = 22.dp, alignment = LayoutAlignment.TOP_RIGHT)
+                                Text(text = "测试文字右对齐", fontSize = 22.dp, alignment = LayoutAlignment.RIGHT_TOP)
                             }
                         }
                         Box(Modifier()
@@ -318,7 +318,7 @@ internal class DrawTest {
                     .fillMaxWidth()
                     .height(500.dp)
 //                    .background(color = Color.BLACK.withAlpha(0.3f), image = bg1)
-                    .background(gradient = Gradient(LayoutAlignment.TOP_LEFT, LayoutAlignment.BOTTOM_RIGHT, listOf(Color.BLACK.withAlpha(1f), Color.BLACK.withAlpha(0f))), image = bg1)
+                    .background(gradient = Gradient(LayoutAlignment.LEFT_TOP, LayoutAlignment.RIGHT_BOTTOM, listOf(Color.BLACK.withAlpha(1f), Color.BLACK.withAlpha(0f))), image = bg1)
                     .border(2.dp, 10.dp)
             ) { }
         }

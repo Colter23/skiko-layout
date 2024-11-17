@@ -22,7 +22,7 @@ public fun Layout.Image(
     image: Image,
     ratio: Float = 0f,
     modifier: Modifier = Modifier(),
-    alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT
+    alignment: LayoutAlignment = LayoutAlignment.DEFAULT
 ) {
     Layout(
         layout = ImageLayout(

@@ -21,7 +21,7 @@ import top.colter.skiko.toDp
 public fun Layout.RichText(
     paragraph: RichParagraph,
     maxLinesCount: Int = 50,
-    alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
+    alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     modifier: Modifier = Modifier(),
 ) {
     Layout(

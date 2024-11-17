@@ -10,32 +10,37 @@ import top.colter.skiko.layout.LayoutPosition
 /**
  * ## 布局对齐方式
  *
- * [TOP_LEFT] ↖
- * [TOP_CENTER] ↑
- * [TOP_RIGHT] ↗
+ * [LEFT_TOP] ↖
+ * [LEFT] ←
+ * [LEFT_BOTTOM] ↙
  *
- * [CENTER_LEFT] ←
+ * [TOP] ↑
  * [CENTER] ·
- * [CENTER_RIGHT] →
+ * [BOTTOM] ↓
  *
- * [BOTTOM_LEFT] ↙
- * [BOTTOM_CENTER] ↓
- * [BOTTOM_RIGHT] ↘
+ * [RIGHT_TOP] ↗
+ * [RIGHT] →
+ * [RIGHT_BOTTOM] ↘
  */
 public class LayoutAlignment private constructor(
     public val horizontal: AxisAlignment,
     public val vertical: AxisAlignment
 ) {
     public companion object {
-        public val TOP_LEFT: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.START, vertical = AxisAlignment.START)
-        public val TOP_CENTER: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.CENTER, vertical = AxisAlignment.START)
-        public val TOP_RIGHT: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.END, vertical = AxisAlignment.START)
-        public val CENTER_LEFT: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.START, vertical = AxisAlignment.CENTER)
+        public val LEFT_TOP: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.START, vertical = AxisAlignment.START)
+        public val LEFT: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.START, vertical = AxisAlignment.CENTER)
+        public val LEFT_BOTTOM: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.START, vertical = AxisAlignment.END)
+        public val TOP: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.CENTER, vertical = AxisAlignment.START)
         public val CENTER: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.CENTER, vertical = AxisAlignment.CENTER)
-        public val CENTER_RIGHT: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.END, vertical = AxisAlignment.CENTER)
-        public val BOTTOM_LEFT: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.START, vertical = AxisAlignment.END)
-        public val BOTTOM_CENTER: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.CENTER, vertical = AxisAlignment.END)
-        public val BOTTOM_RIGHT: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.END, vertical = AxisAlignment.END)
+        public val BOTTOM: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.CENTER, vertical = AxisAlignment.END)
+        public val RIGHT_TOP: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.END, vertical = AxisAlignment.START)
+        public val RIGHT: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.END, vertical = AxisAlignment.CENTER)
+        public val RIGHT_BOTTOM: LayoutAlignment = LayoutAlignment(horizontal = AxisAlignment.END, vertical = AxisAlignment.END)
+
+        /**
+         * 默认对其 左上
+         */
+        public val DEFAULT: LayoutAlignment = LEFT_TOP
     }
 
 }
@@ -57,17 +62,17 @@ public enum class AxisAlignment {
 
 public fun LayoutAlignment.toAlignment(): Alignment {
     return when (this) {
-        LayoutAlignment.TOP_LEFT,
-        LayoutAlignment.CENTER_LEFT,
-        LayoutAlignment.BOTTOM_LEFT -> Alignment.START
+        LayoutAlignment.LEFT_TOP,
+        LayoutAlignment.LEFT,
+        LayoutAlignment.LEFT_BOTTOM -> Alignment.START
 
-        LayoutAlignment.TOP_CENTER,
+        LayoutAlignment.TOP,
         LayoutAlignment.CENTER,
-        LayoutAlignment.BOTTOM_CENTER -> Alignment.CENTER
+        LayoutAlignment.BOTTOM -> Alignment.CENTER
 
-        LayoutAlignment.TOP_RIGHT,
-        LayoutAlignment.CENTER_RIGHT,
-        LayoutAlignment.BOTTOM_RIGHT -> Alignment.END
+        LayoutAlignment.RIGHT_TOP,
+        LayoutAlignment.RIGHT,
+        LayoutAlignment.RIGHT_BOTTOM -> Alignment.END
 
         else -> Alignment.START
     }

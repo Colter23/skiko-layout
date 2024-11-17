@@ -18,7 +18,7 @@ import java.io.File
 public inline fun View(
     fileStr: String,
     modifier: Modifier = Modifier(),
-    alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
+    alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     content: BoxLayout.() -> Unit
 ) {
     View(File(fileStr), modifier, alignment, content)
@@ -35,7 +35,7 @@ public inline fun View(
 public inline fun View(
     file: File,
     modifier: Modifier = Modifier(),
-    alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
+    alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     content: BoxLayout.() -> Unit
 ) {
     val image = View(modifier, alignment, content)
@@ -53,7 +53,7 @@ public inline fun View(
  */
 public inline fun View(
     modifier: Modifier = Modifier(),
-    alignment: LayoutAlignment = LayoutAlignment.TOP_LEFT,
+    alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     content: BoxLayout.() -> Unit
 ): Image {
     val layout = BoxLayout(
