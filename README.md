@@ -33,12 +33,13 @@ dp 默认与 px 1:1 转换
 列 `Column` 内部元素会自动向下排列    
 行 `Row` 内部元素会自动向右排列    
 盒子 `Box` 内部元素绝对定位    
-宫格 `Grid`    
+宫格 `Grid` 宫格    
 
 ### 内容元素
 图片 `Image`    
 文本 `Text` 纯文本元素    
 富文本 `RichText` 支持自定义样式与emoji图片    
+画板 `Canvas` 支持自行绘制图形(v0.0.3)   
 
 ## 样式
 `Modifier`    
@@ -102,13 +103,13 @@ View(
                     .height(20.dp)
                     .background(Color.YELLOW)
                     .border(1.dp, 10.dp),
-                    alignment = LayoutAlignment.BOTTOM_RIGHT
+                    alignment = LayoutAlignment.RIGHT_BOTTOM
                 )
             }
             Column(Modifier().fillWidth().fillMaxHeight().padding(10.dp)) {
                 Box(Modifier().fillMaxWidth().fillHeight().background(Color.RED)) {
                     Box(Modifier().fillMaxWidth().fillMaxHeight()) {
-                        Text(text = "测试测试测试", alignment = LayoutAlignment.TOP_RIGHT)
+                        Text(text = "测试测试测试", alignment = LayoutAlignment.RIGHT_TOP)
                     }
                 }
                 Box(Modifier()
