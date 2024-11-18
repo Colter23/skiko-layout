@@ -13,7 +13,7 @@ import top.colter.skiko.data.place
  *
  * 当只有一个子元素时，宽高为子元素本身宽高
  *
- * 当子元素数量大于一，锁定宽高比例为1:1，子元素平分宽度
+ * 当子元素数量大于一，且 [lockRatio] 为true时，锁定宽高比例为1:1，子元素平分宽度
  *
  * 最好指定元素本身宽度，尽量不要指定子元素宽高
  *
@@ -21,6 +21,7 @@ import top.colter.skiko.data.place
  *
  * @param maxLineCount 每行最多有几个元素
  * @param space 元素之间的间隔
+ * @param lockRatio 是否锁定元素比例为1:1
  * @param modifier 样式
  * @param itemModifier 子元素样式
  * @param alignment 对齐
@@ -29,6 +30,7 @@ import top.colter.skiko.data.place
 public inline fun Layout.Grid(
     maxLineCount: Int = 3,
     space: Dp = 10.dp,
+    lockRatio: Boolean = true,
     modifier: Modifier = Modifier(),
     itemModifier: Modifier? = null,
     alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
@@ -41,6 +43,7 @@ public inline fun Layout.Grid(
             maxLineCount = maxLineCount,
             itemModifier = itemModifier,
             space = space,
+            lockRatio = lockRatio,
             alignment = alignment,
             modifier = modifier,
             parentLayout = this
@@ -53,6 +56,7 @@ public class GridLayout(
     public val maxLineCount: Int,
     public val itemModifier: Modifier?,
     public val space: Dp,
+    public val lockRatio: Boolean,
     public val alignment: LayoutAlignment,
     modifier: Modifier,
     parentLayout: Layout?
@@ -75,7 +79,7 @@ public class GridLayout(
             }
 
             // 指定子元素宽高
-            if (width.isNotNull() || height.isNotNull()) {
+            if (lockRatio && (width.isNotNull() || height.isNotNull())) {
                 val lineCount = if (child.size >= maxLineCount) maxLineCount else child.size
                 val itemWidth: Dp
                 val itemHeight: Dp
