@@ -8,6 +8,8 @@
 
 以下代码可在 [DrawTest](src/test/kotlin/DrawTest.kt) 中找到
 
+有问题都可加群学习交流 QQ群：734922374
+
 ## 使用
 ### Gradle
 ```kotlin
