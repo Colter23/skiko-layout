@@ -10,17 +10,19 @@
 
 有问题都可加群学习交流 QQ群：734922374
 
+v0.0.2升级v0.0.3请看 [v0.0.3](https://github.com/Colter23/skiko-layout/releases/tag/v0.0.3)
+
 ## 使用
 ### Gradle
 ```kotlin
-implementation("top.colter.skiko:skiko-layout:0.0.2")
+implementation("top.colter.skiko:skiko-layout:0.0.3")
 ```
 ### Maven
 ```xml
 <dependency>
     <groupId>top.colter.skiko</groupId>
     <artifactId>skiko-layout</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3</version>
 </dependency>
 ```
 ## 单位
