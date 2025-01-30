@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "top.colter.skiko"
-version = "0.0.3-BETA1"
+version = "0.0.3"
 
 repositories {
     mavenLocal()
@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-    val skikoVersion = "0.8.16"
+    val skikoVersion = "0.8.23"
 
     compileOnly("org.jetbrains.skiko:skiko-awt:$skikoVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
