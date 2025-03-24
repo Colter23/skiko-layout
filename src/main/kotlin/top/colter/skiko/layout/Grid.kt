@@ -11,8 +11,6 @@ import top.colter.skiko.data.place
  *
  * 主要用于宫格图片
  *
- * 当只有一个子元素时，宽高为子元素本身宽高
- *
  * 当子元素数量大于一，且 [lockRatio] 为true时，锁定宽高比例为1:1，子元素平分宽度
  *
  * 最好指定元素本身宽度，尽量不要指定子元素宽高
@@ -36,7 +34,7 @@ public inline fun Layout.Grid(
     alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     content: GridLayout.() -> Unit
 ) {
-    require(maxLineCount > 1) { "max line count require > 1" }
+    require(maxLineCount >= 1) { "max line count require >= 1" }
 
     Layout(
         layout = GridLayout(
@@ -85,10 +83,10 @@ public class GridLayout(
                 val itemHeight: Dp
                 if (width.isNotNull()) {
                     itemWidth = (contentWidth - space * (lineCount - 1)) / lineCount
-                    itemHeight = if (lineCount > 1) itemWidth else child.first().height
+                    itemHeight = itemWidth
                 } else {
                     itemHeight = (contentHeight - space * (lineCount - 1)) / lineCount
-                    itemWidth = if (lineCount > 1) itemHeight else child.first().width
+                    itemWidth = itemHeight
                 }
                 child.forEach {
                     it.width = itemWidth
@@ -111,7 +109,7 @@ public class GridLayout(
             if (height.isNull()) {
                 height = modifier.padding.vertical
                 child.forEachIndexed { index, layout ->
-                    if ((index + 1) % maxLineCount == 1) {
+                    if (index % maxLineCount == 0) {
                         height += layout.height + layout.modifier.margin.vertical + space
                     }
                 }

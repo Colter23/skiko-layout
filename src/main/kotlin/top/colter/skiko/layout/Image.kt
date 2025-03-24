@@ -50,20 +50,22 @@ public class ImageLayout(
 
         // 计算图片宽高
         val w = if (width.isNotNull()) width
-        else if (!modifier.fillWidth) parentLayout!!.modifier.contentWidth
+        else if (!modifier.fillWidth && !modifier.fillMaxWidth) parentLayout!!.modifier.contentWidth
         else 0.dp
 
         if (w.isNotNull() && height.isNull()) {
             height = if (ratio != 0f) w / ratio else (image.height * w.px / image.width).toDp()
+            if (modifier.maxHeight.isNotNull() && height > modifier.maxHeight) height = modifier.maxHeight
             if (width.isNull()) width = w
         }
 
         val h = if (height.isNotNull()) height
-        else if (!modifier.fillHeight) parentLayout!!.modifier.contentHeight
+        else if (!modifier.fillHeight && !modifier.fillMaxHeight) parentLayout!!.modifier.contentHeight
         else 0.dp
 
         if (h.isNotNull() && width.isNull()) {
             width = if (ratio != 0f) h * ratio else (image.width * h.px / image.height).toDp()
+            if (modifier.maxWidth.isNotNull() && width > modifier.maxWidth) width = modifier.maxWidth
             if (height.isNull()) height = h
         }
 
