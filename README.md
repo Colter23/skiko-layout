@@ -1,12 +1,15 @@
 # Skiko Layout
 
+- 实现原理 & 编译测试流程
+![skiko-image](docs/skiko-layout.png)
+
 使用 [skiko](https://github.com/JetBrains/skiko) 静态布局绘图
 
 可以非常方便的布局，不需要计算各个元素的大小和位置，类 jetpack compose 的形式
 
 目前还是测试版，会有很多bug，所有api均可能发生变动
 
-以下代码可在 [DrawTest](src/test/kotlin/DrawTest.kt) 中找到
+以下代码可在 [DrawTest](src/test/kotlin/DrawTest.kt) 中找
 
 有问题都可加群学习交流 QQ群：734922374
 
