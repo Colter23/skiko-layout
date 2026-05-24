@@ -62,7 +62,7 @@ public inline fun View(
         parentLayout = null
     )
     layout.content()
-    layout.measure(false)
+    layout.measure(true)
     layout.place(
         LayoutBounds.makeXYWH(
             width = layout.width,
@@ -71,8 +71,8 @@ public inline fun View(
     )
 
     val surface = Surface.makeRasterN32Premul(
-        layout.width.px.toInt(),
-        layout.height.px.toInt()
+        layout.width.px.toInt().coerceAtLeast(1),
+        layout.height.px.toInt().coerceAtLeast(1)
     ).apply {
         layout.draw(canvas)
     }

@@ -73,11 +73,17 @@ public fun Modifier.width(width: Dp): Modifier {
 /**
  * 最小宽度
  */
-public fun Modifier.minWidth(width: Dp): Modifier = apply { this.minWidth = width }
+public fun Modifier.minWidth(width: Dp): Modifier = apply {
+    require(width >= 0.dp) { "min width require >= 0" }
+    this.minWidth = width
+}
 /**
  * 最大宽度
  */
-public fun Modifier.maxWidth(width: Dp): Modifier = apply { this.maxWidth = width }
+public fun Modifier.maxWidth(width: Dp): Modifier = apply {
+    require(width >= 0.dp) { "max width require >= 0" }
+    this.maxWidth = width
+}
 
 
 /**
@@ -92,11 +98,17 @@ public fun Modifier.height(height: Dp): Modifier  {
 /**
  * 最小高度
  */
-public fun Modifier.minHeight(height: Dp): Modifier = apply { this.minHeight = height }
+public fun Modifier.minHeight(height: Dp): Modifier = apply {
+    require(height >= 0.dp) { "min height require >= 0" }
+    this.minHeight = height
+}
 /**
  * 最大高度
  */
-public fun Modifier.maxHeight(height: Dp): Modifier = apply { this.maxHeight = height }
+public fun Modifier.maxHeight(height: Dp): Modifier = apply {
+    require(height >= 0.dp) { "max height require >= 0" }
+    this.maxHeight = height
+}
 
 
 /**
@@ -313,5 +325,5 @@ public fun Modifier.merge(modifier: Modifier) {
 
     if (modifier.background != null) background = modifier.background
     if (modifier.border != null) border = modifier.border
-    if (modifier.shadows.isNotEmpty()) shadows = modifier.shadows
+    if (modifier.shadows.isNotEmpty()) shadows = ArrayList(modifier.shadows)
 }

@@ -61,6 +61,18 @@ public abstract class Layout(
     // 子元素列表
     public var child: MutableList<Layout> = mutableListOf()
 
+    internal val drawFillPaint: Paint = Paint().apply {
+        isAntiAlias = true
+    }
+    internal val drawStrokePaint: Paint = Paint().apply {
+        isAntiAlias = true
+        mode = PaintMode.STROKE
+    }
+    internal val drawGradientPaint: Paint = Paint().apply {
+        isAntiAlias = true
+    }
+    internal val drawCornerRadii: FloatArray = FloatArray(4)
+
     // 宽高（不包括外边距）
     public var width: Dp = Dp.NULL
     public var height: Dp = Dp.NULL
@@ -75,36 +87,60 @@ public abstract class Layout(
     public val boxWidth: Dp get() = width + modifier.margin.horizontal
     public val boxHeight: Dp get() = height + modifier.margin.vertical
 
+    protected fun availableParentWidth(): Dp {
+        val parentWidth = parentLayout?.contentWidth ?: Dp.NULL
+        return if (parentWidth.isNotNull()) (parentWidth - modifier.margin.horizontal).coerceAtLeast(0.dp) else Dp.NULL
+    }
+
+    protected fun availableParentHeight(): Dp {
+        val parentHeight = parentLayout?.contentHeight ?: Dp.NULL
+        return if (parentHeight.isNotNull()) (parentHeight - modifier.margin.vertical).coerceAtLeast(0.dp) else Dp.NULL
+    }
+
+    protected fun constrainWidth(value: Dp): Dp = constrainSize(value, modifier.minWidth, modifier.maxWidth, "width")
+
+    protected fun constrainHeight(value: Dp): Dp = constrainSize(value, modifier.minHeight, modifier.maxHeight, "height")
+
+    protected fun finishMeasure() {
+        width = constrainWidth(width)
+        height = constrainHeight(height)
+    }
+
+    private fun constrainSize(value: Dp, min: Dp, max: Dp, axis: String): Dp {
+        require(min.isNull() || max.isNull() || min <= max) { "$axis min require <= max" }
+
+        var result = value.coerceAtLeast(0.dp)
+        if (min.isNotNull()) result = result.coerceAtLeast(min)
+        if (max.isNotNull()) result = result.coerceAtMost(max)
+        return result
+    }
+
     /**
      * 第一遍计算宽高
      * 包括手动指定宽高、由父元素继承宽高
      */
     public fun preMeasure() {
         // 手动指定宽高
-        if (width.isNull() && modifier.width.isNotNull())
-            width = if (modifier.maxWidth.isNotNull() && modifier.width > modifier.maxWidth) modifier.maxWidth else modifier.width
-        if (height.isNull() && modifier.height.isNotNull())
-            height = if (modifier.maxHeight.isNotNull() && modifier.height > modifier.maxHeight) modifier.maxHeight else modifier.height
+        if (width.isNull() && modifier.width.isNotNull()) width = constrainWidth(modifier.width)
+        if (height.isNull() && modifier.height.isNotNull()) height = constrainHeight(modifier.height)
+
+        val parentContentWidth = parentLayout?.contentWidth ?: Dp.NULL
+        val parentContentHeight = parentLayout?.contentHeight ?: Dp.NULL
 
         // 由父元素继承宽高且父元素宽高确定
-        if (width.isNull() && modifier.fillMaxWidth && parentLayout?.modifier?.width?.isNotNull() == true) {
-            modifier.width = parentLayout!!.modifier.contentWidth - modifier.margin.horizontal
-            width = modifier.width
-        }
-        if (height.isNull() && modifier.fillMaxHeight && parentLayout?.modifier?.height?.isNotNull() == true) {
-            modifier.height = parentLayout!!.modifier.contentHeight - modifier.margin.vertical
-            height = modifier.height
-        }
+        if (width.isNull() && modifier.fillMaxWidth && parentContentWidth.isNotNull())
+            width = constrainWidth((parentContentWidth - modifier.margin.horizontal).coerceAtLeast(0.dp))
+        if (height.isNull() && modifier.fillMaxHeight && parentContentHeight.isNotNull())
+            height = constrainHeight((parentContentHeight - modifier.margin.vertical).coerceAtLeast(0.dp))
 
         // 按比例继承父元素宽高且父元素宽高确定
-        if (width.isNull() && modifier.fillRatioWidth != 0f && parentLayout?.modifier?.width?.isNotNull() == true) {
-            modifier.width = parentLayout!!.modifier.contentWidth * modifier.fillRatioWidth - modifier.margin.horizontal
-            width = modifier.width
-        }
-        if (height.isNull() && modifier.fillRatioHeight != 0f && parentLayout?.modifier?.height?.isNotNull() == true) {
-            modifier.height = parentLayout!!.modifier.contentHeight * modifier.fillRatioHeight - modifier.margin.vertical
-            height = modifier.height
-        }
+        if (width.isNull() && modifier.fillRatioWidth != 0f && parentContentWidth.isNotNull())
+            width = constrainWidth((parentContentWidth * modifier.fillRatioWidth - modifier.margin.horizontal).coerceAtLeast(0.dp))
+        if (height.isNull() && modifier.fillRatioHeight != 0f && parentContentHeight.isNotNull())
+            height = constrainHeight((parentContentHeight * modifier.fillRatioHeight - modifier.margin.vertical).coerceAtLeast(0.dp))
+
+        if (width.isNotNull()) width = constrainWidth(width)
+        if (height.isNotNull()) height = constrainHeight(height)
     }
 
     /**
@@ -148,9 +184,7 @@ public inline fun <T : Layout> Layout.Layout(
     content: T.() -> Unit
 ) {
     child.add(layout)
-    layout.preMeasure()
     layout.content()
-    layout.measure(false)
 }
 
 
@@ -190,8 +224,15 @@ public data class LayoutBounds(
 public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}) {
 
     // 圆角
-    val radius: FloatArray = if (modifier.border == null) floatArrayOf(0f, 0f, 0f, 0f)
-    else modifier.border!!.radius.map { it.px }.toTypedArray().toFloatArray()
+    val border = modifier.border
+    val radius = drawCornerRadii
+    if (border == null) {
+        radius.fill(0f)
+    } else {
+        for (index in 0 until radius.size) {
+            radius[index] = border.radius.getOrElse(index) { 0.dp }.px
+        }
+    }
 
     val rrect = RRect.makeComplexXYWH(
         position.x.px,
@@ -204,7 +245,7 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
     // 绘制阴影
     if (modifier.shadows.isNotEmpty()) {
         modifier.shadows.forEach {
-            canvas.drawRectShadowAntiAlias(rrect.inflate(modifier.border?.width?.px ?: 0f), it)
+            canvas.drawRectShadowAntiAlias(rrect.inflate(border?.width?.px ?: 0f), it)
         }
     }
 
@@ -242,7 +283,7 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
                 AxisAlignment.CENTER -> rrect.top + (rrect.bottom - rrect.top) / 2
                 AxisAlignment.END -> rrect.bottom
             }
-            canvas.drawRRect(rrect, Paint().apply {
+            canvas.drawRRect(rrect, drawGradientPaint.apply {
                 shader = Shader.makeLinearGradient(
                     x0 = x0,
                     y0 = y0,
@@ -255,7 +296,8 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
 
         // 绘制纯色
         if (bg.color != null) {
-            canvas.drawRRect(rrect, Paint().apply {
+            canvas.drawRRect(rrect, drawFillPaint.apply {
+                shader = null
                 color = bg.color
             })
         }
@@ -263,15 +305,25 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
     }
 
     // 绘制内容
-    canvas.save()
-    canvas.clipRRect(rrect, ClipMode.INTERSECT, true)
-    canvas.content(rrect)
-    canvas.restore()
+    if (contentWidth > 0.dp && contentHeight > 0.dp) {
+        val contentRRect = RRect.makeComplexXYWH(
+            position.x.px + modifier.padding.left.px,
+            position.y.px + modifier.padding.top.px,
+            contentWidth.px,
+            contentHeight.px,
+            floatArrayOf(0f, 0f, 0f, 0f)
+        )
+        canvas.save()
+        canvas.clipRRect(rrect, ClipMode.INTERSECT, true)
+        canvas.clipRRect(contentRRect, ClipMode.INTERSECT, true)
+        canvas.content(contentRRect)
+        canvas.restore()
+    }
 
     // 绘制边框
-    if (modifier.border != null && modifier.border!!.width.isNotNull()) {
-        val border = modifier.border!!
-        canvas.drawRRect(rrect.inflate(0.5f.px) as RRect, Paint().apply {
+    if (border != null && border.width.isNotNull()) {
+        canvas.drawRRect(rrect.inflate(0.5f.px) as RRect, drawStrokePaint.apply {
+            shader = null
             color = border.color
             mode = PaintMode.STROKE
             strokeWidth = border.width.px

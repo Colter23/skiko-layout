@@ -3,6 +3,7 @@ package top.colter.skiko
 import org.jetbrains.skia.*
 import top.colter.skiko.data.Shadow
 import top.colter.skiko.layout.Layout
+import kotlin.jvm.JvmName
 import kotlin.math.PI
 
 
@@ -12,6 +13,8 @@ import kotlin.math.PI
 public const val emojiCharacter: String =
     "(?:[\\uD83C\\uDF00-\\uD83D\\uDDFF]|[\\uD83E\\uDD00-\\uD83E\\uDDFF]|[\\uD83D\\uDE00-\\uD83D\\uDE4F]|[\\uD83D\\uDE80-\\uD83D\\uDEFF]|[\\u2600-\\u26FF]\\uFE0F?|[\\u2700-\\u27BF]\\uFE0F?|\\u24C2\\uFE0F?|[\\uD83C\\uDDE6-\\uD83C\\uDDFF]{1,2}|[\\uD83C\\uDD70\\uD83C\\uDD71\\uD83C\\uDD7E\\uD83C\\uDD7F\\uD83C\\uDD8E\\uD83C\\uDD91-\\uD83C\\uDD9A]\\uFE0F?|[\\u0023\\u002A\\u0030-\\u0039]\\uFE0F?\\u20E3|[\\u2194-\\u2199\\u21A9-\\u21AA]\\uFE0F?|[\\u2B05-\\u2B07\\u2B1B\\u2B1C\\u2B50\\u2B55]\\uFE0F?|[\\u2934\\u2935]\\uFE0F?|[\\u3030\\u303D]\\uFE0F?|[\\u3297\\u3299]\\uFE0F?|[\\uD83C\\uDE01\\uD83C\\uDE02\\uD83C\\uDE1A\\uD83C\\uDE2F\\uD83C\\uDE32-\\uD83C\\uDE3A\\uD83C\\uDE50\\uD83C\\uDE51]\\uFE0F?|[\\u203C\\u2049]\\uFE0F?|[\\u25AA\\u25AB\\u25B6\\u25C0\\u25FB-\\u25FE]\\uFE0F?|[\\u00A9\\u00AE]\\uFE0F?|[\\u2122\\u2139]\\uFE0F?|\\uD83C\\uDC04\\uFE0F?|\\uD83C\\uDCCF\\uFE0F?|[\\u231A\\u231B\\u2328\\u23CF\\u23E9-\\u23F3\\u23F8-\\u23FA]\\uFE0F?)(?:[\\uD83C\\uDFFB-\\uD83C\\uDFFF]|[\\uD83E\\uDDB0-\\uD83E\\uDDB3])?"
 public val emojiRegex: Regex = "$emojiCharacter(?:\\u200D$emojiCharacter)*".toRegex()
+
+private val defaultImageFilterMipmap = FilterMipmap(FilterMode.LINEAR, MipmapMode.NEAREST)
 
 
 public fun List<Layout>.sumWidth(): Dp = sumOf { width + modifier.margin.horizontal }
@@ -35,6 +38,7 @@ public fun <T> List<T>.ifNotEmptyForEach(block: (T) -> Unit): Unit = ifNotEmpty 
     forEach { block(it) }
 }
 
+@JvmName("sumFloatOf")
 public fun <E> List<E>.sumOf(function: (E) -> Float): Float {
     var c = 0f
     forEach { c += function(it) }
@@ -69,7 +73,7 @@ public fun Canvas.drawRectShadowAntiAlias(r: Rect, shadow: Shadow): Canvas =
 public fun Canvas.drawImageRRect(image: Image, srcRect: Rect, rRect: RRect, paint: Paint? = null) {
     save()
     clipRRect(rRect, true)
-    drawImageRect(image, srcRect, rRect, FilterMipmap(FilterMode.LINEAR, MipmapMode.NEAREST), paint, false)
+    drawImageRect(image, srcRect, rRect, defaultImageFilterMipmap, paint, false)
     restore()
 }
 
@@ -96,7 +100,7 @@ public fun Canvas.drawImageClip(
         Rect.makeXYWH(offsetX, 0f, imgW, image.height.toFloat())
     } else {
         val imgH = dstRect.height * image.width / dstRect.width
-        val offsetY = (image.height - imgH) / 2
+        val offsetY = (image.height - imgH) / 2f
         Rect.makeXYWH(0f, offsetY, image.width.toFloat(), imgH)
     }
 

@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "top.colter.skiko"
-version = "0.0.3"
+version = "0.0.4"
 
 repositories {
     mavenLocal()

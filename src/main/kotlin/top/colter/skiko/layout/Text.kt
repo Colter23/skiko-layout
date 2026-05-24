@@ -7,7 +7,6 @@ import top.colter.skiko.data.LayoutAlignment
 import top.colter.skiko.data.place
 import top.colter.skiko.data.toAlignment
 import kotlin.math.min
-import kotlin.text.Typography.paragraph
 
 
 /**
@@ -48,7 +47,6 @@ public fun Layout.Text(
         modifier = modifier,
     )
 }
-
 /**
  * ## 纯文本
  *
@@ -67,7 +65,6 @@ public fun Layout.Text(
     intrinsicAlignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     modifier: Modifier = Modifier()
 ) {
-    // 检查字体是否在字体集中
     if (textStyle.typeface != null) {
         val fonts = FontUtils.fonts.findTypefaces(arrayOf(textStyle.typeface!!.familyName), FontStyle.NORMAL)
         if (fonts.isEmpty()) {
@@ -106,53 +103,59 @@ public class TextLayout(
         textStyle = this@TextLayout.textStyle
     }
 
-    private var layoutParagraph: Paragraph? = null
+    private var cachedParagraph: Paragraph? = null
+    private var layoutWidthPx: Float = -1f
+
+    private fun resolveParagraph(widthPx: Float): Paragraph {
+        val safeWidth = widthPx.coerceAtLeast(1f)
+        val cached = cachedParagraph
+        if (cached != null && layoutWidthPx == safeWidth) return cached
+
+        val paragraph = ParagraphBuilder(paragraphStyle, FontUtils.fonts)
+            .addText(text)
+            .build()
+            .layout(safeWidth)
+        cachedParagraph = paragraph
+        layoutWidthPx = safeWidth
+        return paragraph
+    }
 
     override fun measure(deep: Boolean) {
-        // 第一遍计算宽高
         preMeasure()
 
-        // 计算宽度
-        val maxWidth = if (modifier.width.isNotNull()) modifier.contentWidth
-        else if (modifier.maxWidth.isNotNull()) modifier.maxWidth
-        else if (!modifier.fillWidth && !modifier.fillMaxWidth && parentLayout!!.modifier.contentWidth.isNull()) 10000.dp
-        else if (!modifier.fillWidth && !modifier.fillMaxWidth) parentLayout!!.modifier.contentWidth - modifier.margin.horizontal
-        else 0.dp
-
-        // 进行布局 确定宽高
-        if (maxWidth != 0.dp) {
-            val paragraph = ParagraphBuilder(paragraphStyle, FontUtils.fonts).addText(text).build()
-            layoutParagraph = paragraph.layout(maxWidth.px)
-            if (width.isNull()) width = min(layoutParagraph!!.maxIntrinsicWidth, maxWidth.px).toDp()
-            if (height.isNull()) height = layoutParagraph!!.height.toDp()
+        if (modifier.fillWidth && width.isNull()) {
+            finishMeasure()
+            if (width.isNull()) return
         }
 
+        val availableWidth = availableParentWidth()
+        val maxOuterWidth = when {
+            width.isNotNull() -> width
+            modifier.maxWidth.isNotNull() -> modifier.maxWidth
+            availableWidth.isNotNull() -> availableWidth
+            else -> Dp.NULL
+        }
+        val maxContentWidth = if (maxOuterWidth.isNotNull())
+            (maxOuterWidth - modifier.padding.horizontal).coerceAtLeast(0.dp)
+        else 10000.dp
+
+        val paragraph = resolveParagraph(maxContentWidth.px)
+        if (width.isNull()) {
+            width = min(paragraph.maxIntrinsicWidth, maxContentWidth.px.coerceAtLeast(0f)).toDp() +
+                    modifier.padding.horizontal
+        }
+        if (height.isNull()) height = paragraph.height.toDp() + modifier.padding.vertical
+
+        finishMeasure()
     }
 
     override fun place(bounds: LayoutBounds) {
-        // 确定当前元素位置
         position = alignment.place(width, height, modifier, bounds)
     }
 
     override fun draw(canvas: Canvas) {
-        // 绘制盒子
-        drawBgBox(canvas)
-
-
-//        // 4. 绘制阴影（关键步骤）
-//        val paint = Paint().apply {
-//            color = Color.makeARGB(100, 0, 0, 0)
-//            maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, 10f)
-//        }
-//
-//
-//        canvas.saveLayer(Rect.makeXYWH(0f, 0f, 1000f, 1000f), paint)
-//        // 绘制段落到临时图层
-//        layoutParagraph?.paint(canvas, position.x.px+1, position.y.px+2)
-//        canvas.restore()
-
-        // 绘制文本
-        layoutParagraph?.paint(canvas, position.x.px, position.y.px)
+        drawBgBox(canvas) {
+            cachedParagraph?.paint(canvas, it.left, it.top)
+        }
     }
-
 }

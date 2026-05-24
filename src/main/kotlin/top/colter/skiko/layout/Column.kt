@@ -48,11 +48,11 @@ public class ColumnLayout(
 
             // 指定子元素高度
             if (height.isNotNull()) {
-                val sh = modifier.contentHeight - child.sumHeight()
+                val sh = contentHeight - child.sumHeight()
                 if (sh > 0.dp) {
                     child.filter { it.modifier.fillHeight }.ifNotEmpty {
                         forEach {
-                            it.modifier.height = sh / size
+                            it.height = sh / size
                             it.measure(true)
                         }
                     }
@@ -63,6 +63,7 @@ public class ColumnLayout(
             if (width.isNull()) width = child.maxWidth() + modifier.padding.horizontal
             if (height.isNull()) height = child.sumHeight() + modifier.padding.vertical
         }
+        finishMeasure()
     }
 
     override fun place(bounds: LayoutBounds) {

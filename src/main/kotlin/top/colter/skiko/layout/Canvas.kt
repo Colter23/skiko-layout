@@ -53,6 +53,7 @@ public class CanvasLayout(
     override fun measure(deep: Boolean) {
         // 第一遍计算宽高
         preMeasure()
+        finishMeasure()
     }
 
     override fun place(bounds: LayoutBounds) {

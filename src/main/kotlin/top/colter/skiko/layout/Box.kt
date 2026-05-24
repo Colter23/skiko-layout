@@ -52,6 +52,7 @@ public class BoxLayout(
             if (height.isNull() && !modifier.fillMaxHeight && !modifier.fillHeight) height =
                 child.maxHeight() + modifier.padding.vertical
         }
+        finishMeasure()
     }
 
     override fun place(bounds: LayoutBounds) {

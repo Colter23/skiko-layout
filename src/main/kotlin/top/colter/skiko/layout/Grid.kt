@@ -60,95 +60,107 @@ public class GridLayout(
     parentLayout: Layout?
 ) : Layout(modifier, parentLayout) {
 
-    override fun measure(deep: Boolean) {
-        // 第一遍计算宽高
-        preMeasure()
+    private fun rows(): List<List<Layout>> = child.chunked(maxLineCount)
 
-        if (child.isNotEmpty()) {
-            // 重新计算子元素宽高
-            if (deep) child.forEach { it.measure(true) }
+    private fun rowWidth(row: List<Layout>): Dp {
+        if (row.isEmpty()) return 0.dp
+        val cells = row.sumOf { boxWidth }
+        val gaps = if (row.size > 1) space * (row.size - 1) else 0.dp
+        return cells + gaps
+    }
 
-            // 合并子元素样式
-            if (itemModifier != null) {
-                child.forEach {
-                    it.modifier.merge(itemModifier)
-                    it.measure(true)
-                }
-            }
+    private fun rowHeight(row: List<Layout>): Dp = row.maxOf { boxHeight }
 
-            // 指定子元素宽高
-            if (lockRatio && (width.isNotNull() || height.isNotNull())) {
-                val lineCount = if (child.size >= maxLineCount) maxLineCount else child.size
-                val itemWidth: Dp
-                val itemHeight: Dp
-                if (width.isNotNull()) {
-                    itemWidth = (contentWidth - space * (lineCount - 1)) / lineCount
-                    itemHeight = itemWidth
-                } else {
-                    itemHeight = (contentHeight - space * (lineCount - 1)) / lineCount
-                    itemWidth = itemHeight
-                }
-                child.forEach {
-                    it.width = itemWidth
-                    it.height = itemHeight
-                    it.modifier.width(itemWidth).height(itemHeight)
-                    it.measure(true)
-                }
-            }
+    private fun squareSide(): Dp {
+        if (child.isEmpty()) return 0.dp
+        return child.maxOf { if (width > height) width else height }
+    }
 
-            // 由子元素确定当前元素宽高
-            if (width.isNull()) {
-                width = modifier.padding.horizontal
-                child.forEachIndexed { index, layout ->
-                    if (index < maxLineCount) {
-                        width += layout.width + layout.modifier.margin.horizontal + space
-                    }
-                }
-                if (width.isNotNull()) width -= space
-            }
-            if (height.isNull()) {
-                height = modifier.padding.vertical
-                child.forEachIndexed { index, layout ->
-                    if (index % maxLineCount == 0) {
-                        height += layout.height + layout.modifier.margin.vertical + space
-                    }
-                }
-                if (height.isNotNull()) height -= space
-            }
+    private fun lockedItemSize(): Dp? {
+        if (!lockRatio || child.isEmpty()) return null
+
+        val rowCount = rows().size.coerceAtLeast(1)
+        val columnCount = child.size.coerceAtMost(maxLineCount).coerceAtLeast(1)
+
+        val widthLimit = if (width.isNotNull()) {
+            ((contentWidth - space * (columnCount - 1)).coerceAtLeast(0.dp) / columnCount)
+        } else null
+
+        val heightLimit = if (height.isNotNull()) {
+            ((contentHeight - space * (rowCount - 1)).coerceAtLeast(0.dp) / rowCount)
+        } else null
+
+        return when {
+            widthLimit != null && heightLimit != null -> Dp.min(widthLimit, heightLimit)
+            widthLimit != null -> widthLimit
+            heightLimit != null -> heightLimit
+            else -> squareSide()
         }
     }
 
+    override fun measure(deep: Boolean) {
+        preMeasure()
+
+        if (child.isEmpty()) {
+            finishMeasure()
+            return
+        }
+
+        itemModifier?.let { extra ->
+            child.forEach { it.modifier.merge(extra) }
+        }
+
+        if (deep) {
+            child.forEach { it.measure(true) }
+        }
+
+        lockedItemSize()?.takeIf { it.isNotNull() && it > 0.dp }?.let { itemSize ->
+            child.forEach {
+                it.width = itemSize
+                it.height = itemSize
+                it.modifier.width(itemSize).height(itemSize)
+                it.measure(true)
+            }
+        }
+
+        val rowList = rows()
+        val totalWidth = rowList.fold(0.dp) { acc, row -> Dp.max(acc, rowWidth(row)) }
+        val totalHeight = rowList.fold(0.dp) { acc, row -> acc + rowHeight(row) } +
+                if (rowList.size > 1) space * (rowList.size - 1) else 0.dp
+
+        if (width.isNull()) width = totalWidth + modifier.padding.horizontal
+        if (height.isNull()) height = totalHeight + modifier.padding.vertical
+
+        finishMeasure()
+    }
+
     override fun place(bounds: LayoutBounds) {
-        // 确定当前元素位置
         position = alignment.place(width, height, modifier, bounds)
 
-        var x = 0.dp
         var y = 0.dp
-        // 确定子元素位置
-        child.forEachIndexed { index, layout ->
-            layout.place(
-                LayoutBounds.makeXYWH(
-                    left = position.x + modifier.padding.left + x,
-                    top = position.y + modifier.padding.top + y,
-                    width = layout.boxWidth,
-                    height = layout.boxHeight
+        rows().forEach { row ->
+            var x = 0.dp
+            val rowTop = position.y + modifier.padding.top + y
+            val rowHeight = rowHeight(row)
+
+            row.forEach { layout ->
+                layout.place(
+                    LayoutBounds.makeXYWH(
+                        left = position.x + modifier.padding.left + x,
+                        top = rowTop,
+                        width = layout.boxWidth,
+                        height = rowHeight
+                    )
                 )
-            )
-            x += layout.width + space
-            if ((index + 1) % maxLineCount == 0) {
-                x = 0.dp
-                y += layout.height + space
+                x += layout.boxWidth + space
             }
 
+            y += rowHeight + space
         }
     }
 
     override fun draw(canvas: Canvas) {
-        // 绘制当前元素
         drawBgBox(canvas)
-        // 绘制子元素
         super.draw(canvas)
     }
-
 }
-

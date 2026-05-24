@@ -1,22 +1,25 @@
 package top.colter.skiko.data
 
 import org.jetbrains.skia.*
+import org.jetbrains.skia.paragraph.Paragraph
 import org.jetbrains.skia.paragraph.ParagraphBuilder
 import org.jetbrains.skia.paragraph.ParagraphStyle
 import org.jetbrains.skia.paragraph.TextStyle
 import top.colter.skiko.FontUtils
-import top.colter.skiko.sumOf
+import java.util.IdentityHashMap
 import kotlin.math.max
 
 
 /**
  * 富文本行
  */
-public class RichLine(
+public data class RichLine(
     public val height: Float,
+    public val width: Float,
     public val nodes: List<RichText>
 ) {
-    public constructor(nodes: List<RichText>) : this(0f, nodes)
+    public constructor(nodes: List<RichText>) : this(0f, 0f, nodes)
+    public constructor(height: Float, nodes: List<RichText>) : this(height, 0f, nodes)
 }
 
 
@@ -29,91 +32,121 @@ public class RichParagraph(
     public val defaultStyle: TextStyle,
     public val lines: List<RichLine>
 ) {
-    public val height: Float get() = lines.sumOf { it.height }
+    public val height: Float get() = lines.fold(0f) { acc, line -> acc + line.height }
+    public val width: Float get() = lines.maxOfOrNull { it.width } ?: 0f
 }
 
 
 /**
  * 根据宽度计算换行
  */
-public fun RichParagraph.layout(width: Float): RichParagraph {
-    val tempParagraph = mutableListOf<RichLine>()
-    val defaultFont =
-        Font(FontUtils.matchFamily(defaultStyle.fontFamilies.first()).getTypeface(0), defaultStyle.fontSize)
+public fun RichParagraph.layout(width: Float, maxLinesCount: Int = Int.MAX_VALUE): RichParagraph {
+    if (maxLinesCount <= 0) return RichParagraph(defaultStyle, emptyList())
 
-    for (line in lines) {
-        var tempLine = mutableListOf<RichText>()
-        var currWidth = 0f
-        var maxHeight = 0f
+    val maxWidth = width.coerceAtLeast(1f)
+    val result = mutableListOf<RichLine>()
+    val fontCache = IdentityHashMap<TextStyle, Font>()
+    val lineCache = IdentityHashMap<TextStyle, MutableMap<String, TextLine>>()
 
-        // 换行
-        val wrap: (RichText?) -> Unit = {
-            it?.let { tempLine.add(it) }
-            if (tempLine.isNotEmpty()) {
-                tempParagraph.add(RichLine(maxHeight, tempLine))
-                tempLine = mutableListOf()
-                currWidth = 0f
-                maxHeight = 0f
-            }
+    fun styleOf(style: TextStyle?): TextStyle = style ?: defaultStyle
+    fun fontOf(style: TextStyle): Font = fontCache.getOrPut(style) { style.toFont(defaultStyle) }
+    fun textLine(style: TextStyle, value: String): TextLine {
+        val cache = lineCache.getOrPut(style) { HashMap() }
+        return cache.getOrPut(value) { TextLine.make(value, fontOf(style)) }
+    }
+    fun blankHeight(style: TextStyle): Float = textLine(style, "|").height
+
+    var currentNodes = mutableListOf<RichText>()
+    var currentWidth = 0f
+    var currentHeight = 0f
+    var truncated = false
+
+    fun flushLine(force: Boolean, fallbackHeight: Float): Boolean {
+        if (!force && currentNodes.isEmpty()) return true
+        if (result.size >= maxLinesCount) return false
+
+        val lineHeight = if (currentHeight > 0f) currentHeight else fallbackHeight
+        result.add(RichLine(lineHeight, currentWidth, currentNodes))
+        currentNodes = mutableListOf()
+        currentWidth = 0f
+        currentHeight = 0f
+        return true
+    }
+
+    fun appendAdvance(width: Float, height: Float, spacing: Float) {
+        if (currentWidth > 0f) currentWidth += spacing
+        currentWidth += width
+        currentHeight = max(currentHeight, height)
+    }
+
+    loop@ for (sourceLine in lines) {
+        if (sourceLine.nodes.isEmpty()) {
+            truncated = !flushLine(true, blankHeight(defaultStyle))
+            if (truncated) break
+            continue
         }
-        val wrapText: (StringBuilder, TextStyle?) -> Unit = { sb, s ->
-            wrap(RichText.Text(sb.toString(), s))
-            sb.clear()
-        }
 
-        for (node in line.nodes) {
+        for (node in sourceLine.nodes) {
             when (node) {
                 is RichText.Text -> {
-                    val font = if (node.style == null) defaultFont
-                    else Font(
-                        FontUtils.matchFamily(node.style.fontFamilies.first()).getTypeface(0),
-                        node.style.fontSize
-                    )
-                    val tempText = StringBuilder()
-                    // 根据码点分割字符串
-                    for (point in node.value.codePoints()) {
-                        val c = String(intArrayOf(point), 0, intArrayOf(point).size)
-                        if (c == "\n") {
-                            if (tempText.isBlank()) {
-                                maxHeight = TextLine.make("|", font).height
-                                tempText.append(' ')
-                            }
-                            wrapText(tempText, node.style)
-                        } else {
-                            val charLine = TextLine.make(c, font)
-                            if (currWidth + charLine.width > width) {
-                                wrapText(tempText, node.style)
-                            }
-                            currWidth += charLine.width + (node.style?.letterSpacing ?: defaultStyle.letterSpacing)
-                            maxHeight = max(maxHeight, charLine.height)
-                            tempText.append(c)
+                    val style = styleOf(node.style)
+                    val buffer = StringBuilder()
+
+                    fun flushTextBuffer() {
+                        if (buffer.isNotEmpty()) {
+                            currentNodes.add(RichText.Text(buffer.toString(), node.style))
+                            buffer.clear()
                         }
                     }
-                    if (tempText.toString() == node.value) tempLine.add(node)
-                    else tempLine.add(RichText.Text(tempText.toString(), node.style))
+
+                    for (point in node.value.codePoints()) {
+                        val value = String(Character.toChars(point))
+                        if (value == "\n") {
+                            flushTextBuffer()
+                            currentHeight = max(currentHeight, blankHeight(style))
+                            truncated = !flushLine(true, blankHeight(style))
+                            if (truncated) break@loop
+                            continue
+                        }
+
+                        val line = textLine(style, value)
+                        val spacing = style.letterSpacing
+                        val advance = line.width + if (currentWidth > 0f) spacing else 0f
+                        if (currentWidth > 0f && currentWidth + advance > maxWidth) {
+                            flushTextBuffer()
+                            truncated = !flushLine(true, line.height)
+                            if (truncated) break@loop
+                        }
+
+                        buffer.append(value)
+                        appendAdvance(line.width, line.height, spacing)
+                    }
+                    flushTextBuffer()
                 }
 
                 is RichText.Emoji -> {
-                    val font = if (node.style == null) defaultFont
-                    else Font(
-                        FontUtils.matchFamily(node.style.fontFamilies.first()).getTypeface(0),
-                        node.style.fontSize
-                    )
-                    // 用来测量对应字体下emoji的大小
-                    val emojiText = TextLine.make("🙂", font)
-                    if (currWidth + emojiText.width > width) wrap(null)
-                    currWidth += emojiText.width
-                    maxHeight = max(maxHeight, emojiText.height)
-                    tempLine.add(node)
+                    val style = styleOf(node.style)
+                    val line = node.textLine(style, defaultStyle)
+                    val spacing = style.letterSpacing
+                    val advance = line.width + if (currentWidth > 0f) spacing else 0f
+                    if (currentWidth > 0f && currentWidth + advance > maxWidth) {
+                        truncated = !flushLine(true, line.height)
+                        if (truncated) break@loop
+                    }
+
+                    currentNodes.add(node)
+                    appendAdvance(line.width, line.height, spacing)
                 }
             }
-
         }
 
-        wrap(null)
+        if (currentNodes.isNotEmpty()) {
+            truncated = !flushLine(true, blankHeight(defaultStyle))
+            if (truncated) break
+        }
     }
 
-    return RichParagraph(defaultStyle, tempParagraph)
+    return RichParagraph(defaultStyle, result)
 }
 
 
@@ -121,47 +154,24 @@ public fun RichParagraph.layout(width: Float): RichParagraph {
  * 绘制
  */
 public fun RichParagraph.print(canvas: Canvas, x: Float, y: Float) {
-    val defaultFont = Font(defaultStyle.typeface, defaultStyle.fontSize)
     val paragraphStyle = ParagraphStyle()
     var currY = y
+
     for (line in lines) {
         var currX = x
         for (node in line.nodes) {
             when (node) {
                 is RichText.Text -> {
                     val style = node.style ?: defaultStyle
-                    val paragraph = ParagraphBuilder(paragraphStyle, FontUtils.fonts)
-                        .pushStyle(style)
-                        .addText(node.value)
-                        .build()
-                        .layout(10000f)
+                    val paragraph = node.paragraph(style, paragraphStyle)
                     val cy = currY + if (paragraph.height < line.height) line.height - paragraph.height else 0f
-                    currX += paragraph.paint(canvas, currX, cy).maxIntrinsicWidth
-                    // 使用TextLine绘制
-//                    val font = if (node.style == null) defaultFont
-//                    else Font(FontUtils.matchFamily(node.style.fontFamilies.first()).getTypeface(0), node.style.fontSize)
-//                    val lineNode = TextLine.make(node.value, font)
-//                    val cy = currY + if (lineNode.height < line.height) line.height - lineNode.height else 0f
-//                    canvas.drawTextLine(lineNode, currX, cy + lineNode.height, Paint().apply {
-//                        color = style.color
-//                    })
-//                    currX += lineNode.width
+                    paragraph.paint(canvas, currX, cy)
+                    currX += paragraph.maxIntrinsicWidth
                 }
 
                 is RichText.Emoji -> {
-                    val font = if (node.style == null) defaultFont
-                    else Font(
-                        FontUtils.matchFamily(node.style.fontFamilies.first()).getTypeface(0),
-                        node.style.fontSize
-                    )
-                    // img 为空时
-//                    if (node.img == null) {
-//                        val emojiLine = TextLine.make(node.value, font)
-//                        val cy = currY + if (emojiLine.height < line.height) line.height - emojiLine.height else 0f
-//                        canvas.drawTextLine(emojiLine, currX, cy + emojiLine.height * 0.8f, Paint())
-//                        currX += emojiLine.width
-//                    }else {
-                    val emojiLine = TextLine.make("🙂", font)
+                    val style = node.style ?: defaultStyle
+                    val emojiLine = node.textLine(style, defaultStyle)
                     val cy = currY + if (emojiLine.height < line.height) line.height - emojiLine.height else 0f
                     val srcRect = Rect.makeXYWH(0f, 0f, node.img.width.toFloat(), node.img.height.toFloat())
                     val tarRect = Rect.makeXYWH(currX, cy, emojiLine.width, emojiLine.height)
@@ -179,4 +189,49 @@ public fun RichParagraph.print(canvas: Canvas, x: Float, y: Float) {
         }
         currY += line.height
     }
+}
+
+private const val DEFAULT_FONT_SIZE: Float = 14f
+private const val EMOJI_MEASURE_TEXT: String = "\uD83D\uDE42"
+
+private fun TextStyle.toFont(fallbackStyle: TextStyle? = null): Font {
+    val size = fontSize.takeIf { it > 0f }
+        ?: fallbackStyle?.fontSize?.takeIf { it > 0f }
+        ?: DEFAULT_FONT_SIZE
+    val typeface = typeface
+        ?: resolveTypeface()
+        ?: fallbackStyle?.typeface
+        ?: fallbackStyle?.resolveTypeface()
+        ?: FontUtils.defaultFont
+    return Font(typeface, size)
+}
+
+private fun TextStyle.resolveTypeface(): Typeface? {
+    val familyName = fontFamilies.firstOrNull() ?: return null
+    val set = FontUtils.matchFamily(familyName)
+    return if (set.count() > 0) set.getTypeface(0) else null
+}
+
+private fun RichText.Text.paragraph(style: TextStyle, paragraphStyle: ParagraphStyle): Paragraph {
+    val cached = drawCacheParagraph
+    if (cached != null && drawCacheStyle === style) return cached
+
+    val paragraph = ParagraphBuilder(paragraphStyle, FontUtils.fonts)
+        .pushStyle(style)
+        .addText(value)
+        .build()
+        .layout(10000f)
+    drawCacheStyle = style
+    drawCacheParagraph = paragraph
+    return paragraph
+}
+
+private fun RichText.Emoji.textLine(style: TextStyle, fallbackStyle: TextStyle): TextLine {
+    val cached = drawCacheLine
+    if (cached != null && drawCacheStyle === style) return cached
+
+    val line = TextLine.make(EMOJI_MEASURE_TEXT, style.toFont(fallbackStyle))
+    drawCacheStyle = style
+    drawCacheLine = line
+    return line
 }

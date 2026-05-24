@@ -4,8 +4,8 @@ import org.jetbrains.skia.Canvas
 import org.jetbrains.skia.Image
 import top.colter.skiko.*
 import top.colter.skiko.data.LayoutAlignment
-import top.colter.skiko.data.place
 import top.colter.skiko.data.Ratio
+import top.colter.skiko.data.place
 
 
 /**
@@ -35,7 +35,6 @@ public fun Layout.Image(
         content = {},
     )
 }
-
 public class ImageLayout(
     public val image: Image,
     public val ratio: Float,
@@ -44,44 +43,137 @@ public class ImageLayout(
     parentLayout: Layout
 ) : Layout(modifier, parentLayout) {
 
+    private fun naturalRatio(): Float = if (ratio != 0f) ratio else image.width.toFloat() / image.height.toFloat()
+
+    private fun contentWidthFromOuter(outerWidth: Dp): Dp =
+        (outerWidth - modifier.padding.horizontal).coerceAtLeast(0.dp)
+
+    private fun contentHeightFromOuter(outerHeight: Dp): Dp =
+        (outerHeight - modifier.padding.vertical).coerceAtLeast(0.dp)
+
+    private fun fitRatioSize(
+        preferredWidth: Float,
+        preferredHeight: Float,
+        minWidth: Float,
+        minHeight: Float,
+        maxWidth: Float,
+        maxHeight: Float
+    ): Pair<Float, Float> {
+        var widthPx = preferredWidth.coerceAtLeast(0f)
+        var heightPx = preferredHeight.coerceAtLeast(0f)
+
+        fun scaleTo(limitWidth: Float, limitHeight: Float, shrinkOnly: Boolean): Boolean {
+            if (widthPx <= 0f || heightPx <= 0f) return false
+            val scale = minOf(limitWidth / widthPx, limitHeight / heightPx)
+            if (scale.isNaN() || scale.isInfinite()) return false
+            if (shrinkOnly && scale >= 1f) return false
+            if (!shrinkOnly && scale <= 1f) return false
+            widthPx *= scale
+            heightPx *= scale
+            return true
+        }
+
+        if (maxWidth.isFinite() || maxHeight.isFinite()) {
+            val widthLimit = if (maxWidth.isFinite()) maxWidth else Float.POSITIVE_INFINITY
+            val heightLimit = if (maxHeight.isFinite()) maxHeight else Float.POSITIVE_INFINITY
+            scaleTo(widthLimit, heightLimit, shrinkOnly = true)
+        }
+
+        if (minWidth > 0f || minHeight > 0f) {
+            val widthLimit = if (minWidth > 0f) minWidth else 0f
+            val heightLimit = if (minHeight > 0f) minHeight else 0f
+            if (widthPx < widthLimit || heightPx < heightLimit) {
+                val scale = maxOf(
+                    if (widthPx > 0f && widthLimit > 0f) widthLimit / widthPx else 0f,
+                    if (heightPx > 0f && heightLimit > 0f) heightLimit / heightPx else 0f,
+                    1f
+                )
+                widthPx *= scale
+                heightPx *= scale
+            }
+        }
+
+        if (maxWidth.isFinite() || maxHeight.isFinite()) {
+            val widthLimit = if (maxWidth.isFinite()) maxWidth else Float.POSITIVE_INFINITY
+            val heightLimit = if (maxHeight.isFinite()) maxHeight else Float.POSITIVE_INFINITY
+            scaleTo(widthLimit, heightLimit, shrinkOnly = true)
+        }
+
+        return widthPx to heightPx
+    }
+
     override fun measure(deep: Boolean) {
-        // 第一遍计算宽高
         preMeasure()
 
-        // 计算图片宽高
-        val w = if (width.isNotNull()) width
-        else if (!modifier.fillWidth && !modifier.fillMaxWidth) parentLayout!!.modifier.contentWidth
-        else 0.dp
+        val aspectRatio = naturalRatio()
+        val naturalWidth = image.width.toFloat().toDp()
+        val naturalHeight = image.height.toFloat().toDp()
 
-        if (w.isNotNull() && height.isNull()) {
-            height = if (ratio != 0f) w / ratio else (image.height * w.px / image.width).toDp()
-            if (modifier.maxHeight.isNotNull() && height > modifier.maxHeight) height = modifier.maxHeight
-            if (width.isNull()) width = w
+        val explicitWidth = width.isNotNull()
+        val explicitHeight = height.isNotNull()
+
+        if (explicitWidth && explicitHeight) {
+            finishMeasure()
+            return
         }
 
-        val h = if (height.isNotNull()) height
-        else if (!modifier.fillHeight && !modifier.fillMaxHeight) parentLayout!!.modifier.contentHeight
-        else 0.dp
-
-        if (h.isNotNull() && width.isNull()) {
-            width = if (ratio != 0f) h * ratio else (image.width * h.px / image.height).toDp()
-            if (modifier.maxWidth.isNotNull() && width > modifier.maxWidth) width = modifier.maxWidth
-            if (height.isNull()) height = h
+        val availableWidth = availableParentWidth()
+        val preferredOuterWidth = when {
+            explicitWidth -> width
+            modifier.maxWidth.isNotNull() -> modifier.maxWidth
+            availableWidth.isNotNull() && !modifier.fillWidth && !modifier.fillMaxWidth -> availableWidth
+            else -> naturalWidth + modifier.padding.horizontal
         }
 
+        val preferredOuterHeight = when {
+            explicitHeight -> height
+            modifier.maxHeight.isNotNull() -> modifier.maxHeight
+            else -> Dp.NULL
+        }
+
+        var contentWidth = if (preferredOuterWidth.isNotNull()) contentWidthFromOuter(preferredOuterWidth) else 0.dp
+        var contentHeight = if (preferredOuterHeight.isNotNull()) contentHeightFromOuter(preferredOuterHeight) else 0.dp
+
+        if (!explicitWidth && !explicitHeight) {
+            contentWidth = when {
+                contentWidth.isNotNull() && contentWidth > 0.dp -> contentWidth
+                naturalWidth > 0.dp -> naturalWidth
+                else -> 0.dp
+            }
+            contentHeight = if (contentWidth > 0.dp) (contentWidth.px / aspectRatio).toDp() else naturalHeight
+        } else if (explicitWidth && !explicitHeight) {
+            contentHeight = if (contentWidth > 0.dp) (contentWidth.px / aspectRatio).toDp() else naturalHeight
+        } else if (!explicitWidth && explicitHeight) {
+            contentWidth = if (contentHeight > 0.dp) (contentHeight.px * aspectRatio).toDp() else naturalWidth
+        }
+
+        val minContentWidth = (modifier.minWidth - modifier.padding.horizontal).coerceAtLeast(0.dp).px
+        val minContentHeight = (modifier.minHeight - modifier.padding.vertical).coerceAtLeast(0.dp).px
+        val maxContentWidth = if (modifier.maxWidth.isNotNull()) contentWidthFromOuter(modifier.maxWidth).px else Float.POSITIVE_INFINITY
+        val maxContentHeight = if (modifier.maxHeight.isNotNull()) contentHeightFromOuter(modifier.maxHeight).px else Float.POSITIVE_INFINITY
+
+        val fitted = fitRatioSize(
+            preferredWidth = contentWidth.px,
+            preferredHeight = contentHeight.px,
+            minWidth = minContentWidth,
+            minHeight = minContentHeight,
+            maxWidth = maxContentWidth,
+            maxHeight = maxContentHeight
+        )
+
+        width = fitted.first.toDp() + modifier.padding.horizontal
+        height = fitted.second.toDp() + modifier.padding.vertical
+
+        finishMeasure()
     }
 
     override fun place(bounds: LayoutBounds) {
-        // 确定当前元素位置
         position = alignment.place(width, height, modifier, bounds)
     }
 
     override fun draw(canvas: Canvas) {
-        // 绘制当前元素
         drawBgBox(canvas) {
-            // 绘制图片
             drawImageClip(image, it)
         }
     }
-
 }

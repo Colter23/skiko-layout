@@ -1,8 +1,14 @@
 package top.colter.skiko.layout
 
 import org.jetbrains.skia.Canvas
+import top.colter.skiko.Dp
 import top.colter.skiko.Modifier
-import top.colter.skiko.data.*
+import top.colter.skiko.data.LayoutAlignment
+import top.colter.skiko.data.RichParagraph
+import top.colter.skiko.data.layout
+import top.colter.skiko.data.print
+import top.colter.skiko.data.place
+import top.colter.skiko.dp
 import top.colter.skiko.toDp
 
 
@@ -44,34 +50,56 @@ public class RichTextLayout(
     parentLayout: Layout
 ) : Layout(modifier, parentLayout) {
 
-    private var layoutParagraph: RichParagraph? = null
+    private var cachedParagraph: RichParagraph? = null
+    private var layoutWidthPx: Float = -1f
+
+    private fun resolveParagraph(widthPx: Float): RichParagraph {
+        val safeWidth = widthPx.coerceAtLeast(1f)
+        val cached = cachedParagraph
+        if (cached != null && layoutWidthPx == safeWidth) return cached
+
+        val result = paragraph.layout(safeWidth, maxLinesCount)
+        cachedParagraph = result
+        layoutWidthPx = safeWidth
+        return result
+    }
 
     override fun measure(deep: Boolean) {
-        // 第一遍计算宽高
         preMeasure()
 
-        // 确定宽度
-        val maxWidth = if (modifier.width.isNotNull()) modifier.contentWidth.px
-        else if (modifier.maxWidth.isNotNull()) modifier.maxWidth.px
-        else if (!modifier.fillWidth) parentLayout!!.modifier.contentWidth.px - modifier.margin.horizontal.px
-        else 0f
-
-        // 进行布局 确定高度
-        if (layoutParagraph == null && maxWidth != 0f) {
-            layoutParagraph = paragraph.layout(maxWidth)
-            if (height.isNull()) height = layoutParagraph!!.height.toDp()
+        if (modifier.fillWidth && width.isNull()) {
+            finishMeasure()
+            if (width.isNull()) return
         }
 
+        val availableWidth = availableParentWidth()
+        val maxOuterWidth = when {
+            width.isNotNull() -> width
+            modifier.maxWidth.isNotNull() -> modifier.maxWidth
+            availableWidth.isNotNull() -> availableWidth
+            else -> Dp.NULL
+        }
+        val maxContentWidth = if (maxOuterWidth.isNotNull())
+            (maxOuterWidth - modifier.padding.horizontal).coerceAtLeast(0.dp)
+        else 10000.dp
+
+        val layout = resolveParagraph(maxContentWidth.px)
+        if (width.isNull()) {
+            width = layout.width.coerceAtMost(maxContentWidth.px.coerceAtLeast(0f)).toDp() +
+                    modifier.padding.horizontal
+        }
+        if (height.isNull()) height = layout.height.toDp() + modifier.padding.vertical
+
+        finishMeasure()
     }
 
     override fun place(bounds: LayoutBounds) {
-        // 确定当前元素位置
         position = alignment.place(width, height, modifier, bounds)
     }
 
     override fun draw(canvas: Canvas) {
-        // 绘制文章
-        layoutParagraph?.print(canvas, position.x.px, position.y.px)
+        drawBgBox(canvas) {
+            cachedParagraph?.print(canvas, it.left, it.top)
+        }
     }
-
 }

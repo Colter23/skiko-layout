@@ -48,11 +48,11 @@ public class RowLayout(
 
             // 指定子元素宽度
             if (width.isNotNull()) {
-                val sw = modifier.contentWidth - child.sumWidth()
+                val sw = contentWidth - child.sumWidth()
                 if (sw > 0.dp) {
                     child.filter { it.modifier.fillWidth }.ifNotEmpty {
                         forEach {
-                            it.modifier.width = sw / size
+                            it.width = sw / size
                             it.measure(true)
                         }
                     }
@@ -63,6 +63,7 @@ public class RowLayout(
             if (width.isNull()) width = child.sumWidth() + modifier.padding.horizontal
             if (height.isNull()) height = child.maxHeight() + modifier.padding.vertical
         }
+        finishMeasure()
     }
 
     override fun place(bounds: LayoutBounds) {

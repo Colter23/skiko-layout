@@ -1,6 +1,8 @@
 package top.colter.skiko.data
 
 import org.jetbrains.skia.Image
+import org.jetbrains.skia.TextLine
+import org.jetbrains.skia.paragraph.Paragraph
 import org.jetbrains.skia.paragraph.TextStyle
 
 
@@ -24,7 +26,10 @@ public sealed class RichText {
     public data class Text(
         val value: String,
         val style: TextStyle? = null,
-    ) : RichText()
+    ) : RichText() {
+        internal var drawCacheStyle: TextStyle? = null
+        internal var drawCacheParagraph: Paragraph? = null
+    }
 
     /**
      * Emoji元素
@@ -37,5 +42,8 @@ public sealed class RichText {
         val value: String,
         val img: Image,
         val style: TextStyle? = null,
-    ) : RichText()
+    ) : RichText() {
+        internal var drawCacheStyle: TextStyle? = null
+        internal var drawCacheLine: TextLine? = null
+    }
 }
