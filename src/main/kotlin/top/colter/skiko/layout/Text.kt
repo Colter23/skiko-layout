@@ -7,6 +7,7 @@ import top.colter.skiko.data.LayoutAlignment
 import top.colter.skiko.data.place
 import top.colter.skiko.data.toAlignment
 import kotlin.math.min
+import kotlin.text.Typography.paragraph
 
 
 /**
@@ -114,8 +115,8 @@ public class TextLayout(
         // 计算宽度
         val maxWidth = if (modifier.width.isNotNull()) modifier.contentWidth
         else if (modifier.maxWidth.isNotNull()) modifier.maxWidth
-        else if (!modifier.fillWidth && parentLayout!!.modifier.contentWidth == 0.dp) 10000.dp
-        else if (!modifier.fillWidth) parentLayout!!.modifier.contentWidth - modifier.margin.horizontal
+        else if (!modifier.fillWidth && !modifier.fillMaxWidth && parentLayout!!.modifier.contentWidth.isNull()) 10000.dp
+        else if (!modifier.fillWidth && !modifier.fillMaxWidth) parentLayout!!.modifier.contentWidth - modifier.margin.horizontal
         else 0.dp
 
         // 进行布局 确定宽高
@@ -136,6 +137,20 @@ public class TextLayout(
     override fun draw(canvas: Canvas) {
         // 绘制盒子
         drawBgBox(canvas)
+
+
+//        // 4. 绘制阴影（关键步骤）
+//        val paint = Paint().apply {
+//            color = Color.makeARGB(100, 0, 0, 0)
+//            maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, 10f)
+//        }
+//
+//
+//        canvas.saveLayer(Rect.makeXYWH(0f, 0f, 1000f, 1000f), paint)
+//        // 绘制段落到临时图层
+//        layoutParagraph?.paint(canvas, position.x.px+1, position.y.px+2)
+//        canvas.restore()
+
         // 绘制文本
         layoutParagraph?.paint(canvas, position.x.px, position.y.px)
     }

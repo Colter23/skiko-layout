@@ -82,9 +82,9 @@ public abstract class Layout(
     public fun preMeasure() {
         // 手动指定宽高
         if (width.isNull() && modifier.width.isNotNull())
-            width = if (modifier.width > modifier.maxWidth) modifier.maxWidth else modifier.width
+            width = if (modifier.maxWidth.isNotNull() && modifier.width > modifier.maxWidth) modifier.maxWidth else modifier.width
         if (height.isNull() && modifier.height.isNotNull())
-            height = if (modifier.height > modifier.maxHeight) modifier.maxHeight else modifier.height
+            height = if (modifier.maxHeight.isNotNull() && modifier.height > modifier.maxHeight) modifier.maxHeight else modifier.height
 
         // 由父元素继承宽高且父元素宽高确定
         if (width.isNull() && modifier.fillMaxWidth && parentLayout?.modifier?.width?.isNotNull() == true) {
