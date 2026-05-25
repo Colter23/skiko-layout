@@ -48,24 +48,24 @@ public class BoxLayout(
 
             // 由子元素确定当前元素宽高
             if (width.isNull() && !modifier.fillMaxWidth && !modifier.fillWidth) width =
-                child.maxWidth() + modifier.padding.horizontal
+                child.maxWidth() + resolvedPadding.horizontal
             if (height.isNull() && !modifier.fillMaxHeight && !modifier.fillHeight) height =
-                child.maxHeight() + modifier.padding.vertical
+                child.maxHeight() + resolvedPadding.vertical
         }
         finishMeasure()
     }
 
     override fun place(bounds: LayoutBounds) {
         // 确定当前元素位置
-        position = alignment.place(width, height, modifier, bounds)
+        position = alignment.place(width, height, resolvedMargin, bounds)
 
         // 确定子元素位置
         for (layout in child) {
             layout.place(
                 // 指定子元素最大边界
                 LayoutBounds.makeXYWH(
-                    left = position.x + modifier.padding.left,
-                    top = position.y + modifier.padding.top,
+                    left = position.x + resolvedPadding.left,
+                    top = position.y + resolvedPadding.top,
                     width = contentWidth,
                     height = contentHeight
                 )

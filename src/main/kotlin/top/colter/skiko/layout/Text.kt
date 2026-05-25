@@ -136,21 +136,21 @@ public class TextLayout(
             else -> Dp.NULL
         }
         val maxContentWidth = if (maxOuterWidth.isNotNull())
-            (maxOuterWidth - modifier.padding.horizontal).coerceAtLeast(0.dp)
+            (maxOuterWidth - resolvedPadding.horizontal).coerceAtLeast(0.dp)
         else 10000.dp
 
         val paragraph = resolveParagraph(maxContentWidth.px)
         if (width.isNull()) {
             width = min(paragraph.maxIntrinsicWidth, maxContentWidth.px.coerceAtLeast(0f)).toDp() +
-                    modifier.padding.horizontal
+                    resolvedPadding.horizontal
         }
-        if (height.isNull()) height = paragraph.height.toDp() + modifier.padding.vertical
+        if (height.isNull()) height = paragraph.height.toDp() + resolvedPadding.vertical
 
         finishMeasure()
     }
 
     override fun place(bounds: LayoutBounds) {
-        position = alignment.place(width, height, modifier, bounds)
+        position = alignment.place(width, height, resolvedMargin, bounds)
     }
 
     override fun draw(canvas: Canvas) {

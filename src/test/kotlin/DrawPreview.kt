@@ -49,6 +49,7 @@ fun main() {
     initPreview()
     generateParagraph()
     generateViewLayout1()
+    generateEdgeRatio()
     generateMixTypeset()
     generateGrid()
     generateShadow()
@@ -182,6 +183,44 @@ private fun generateViewLayout1() {
         }
     }
     println("generated layout1.png")
+}
+
+private fun generateEdgeRatio() {
+    View(
+        file = previewOutput.resolve("edge_ratio.png"),
+        modifier = Modifier()
+            .width(1000.dp)
+            .height(600.dp)
+            .background(Color.makeRGB(233, 241, 255))
+    ) {
+        Box(
+            Modifier()
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .paddingRatio(horizontal = 0.08f, vertical = 0.1f)
+                .background(Color.WHITE.withAlpha(0.72f))
+                .border(3.dp, 18.dp, Color.YELLOW)
+        ) {
+            Box(
+                Modifier()
+                    .width(220.dp)
+                    .height(140.dp)
+                    .marginRatio(horizontal = 0.06f, vertical = 0.08f)
+                    .background(Color.RED.withAlpha(0.7f))
+                    .border(5.dp, 14.dp, Color.BLUE)
+            )
+            Box(
+                Modifier()
+                    .width(220.dp)
+                    .height(140.dp)
+                    .marginRatio(horizontal = 0.18f, vertical = 0.24f)
+                    .background(Color.BLUE.withAlpha(0.65f))
+                    .border(5.dp, 14.dp, Color.GREEN),
+                alignment = LayoutAlignment.RIGHT_BOTTOM
+            )
+        }
+    }
+    println("generated edge_ratio.png")
 }
 
 private fun Layout.richParagraphPreview(modifier: Modifier) {

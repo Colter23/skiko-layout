@@ -2,6 +2,7 @@ package top.colter.skiko.data
 
 import org.jetbrains.skia.paragraph.Alignment
 import top.colter.skiko.Dp
+import top.colter.skiko.data.Edge
 import top.colter.skiko.Modifier
 import top.colter.skiko.layout.LayoutBounds
 import top.colter.skiko.layout.LayoutPosition
@@ -78,13 +79,13 @@ public fun LayoutAlignment.toAlignment(): Alignment {
     }
 }
 
-public fun AxisAlignment.align(isHorizontal: Boolean, width: Dp, height: Dp, modifier: Modifier, bounds: LayoutBounds): Dp {
+public fun AxisAlignment.align(isHorizontal: Boolean, width: Dp, height: Dp, margin: Edge, bounds: LayoutBounds): Dp {
     val start = if (isHorizontal) bounds.left else bounds.top
     val boundsWidth = if (isHorizontal) bounds.width else bounds.height
     val w = if (isHorizontal) width else height
     val end = if (isHorizontal) bounds.right else bounds.bottom
-    val marginStart = if (isHorizontal) modifier.margin.left else modifier.margin.top
-    val marginEnd = if (isHorizontal) modifier.margin.right else modifier.margin.bottom
+    val marginStart = if (isHorizontal) margin.left else margin.top
+    val marginEnd = if (isHorizontal) margin.right else margin.bottom
 
     return when (this) {
         AxisAlignment.START -> start + marginStart
@@ -93,9 +94,17 @@ public fun AxisAlignment.align(isHorizontal: Boolean, width: Dp, height: Dp, mod
     }
 }
 
-public fun LayoutAlignment.place(width: Dp, height: Dp, modifier: Modifier, bounds: LayoutBounds): LayoutPosition {
+public fun AxisAlignment.align(isHorizontal: Boolean, width: Dp, height: Dp, modifier: Modifier, bounds: LayoutBounds): Dp {
+    return align(isHorizontal, width, height, modifier.margin, bounds)
+}
+
+public fun LayoutAlignment.place(width: Dp, height: Dp, margin: Edge, bounds: LayoutBounds): LayoutPosition {
     return LayoutPosition(
-        x = this.horizontal.align(true, width, height, modifier, bounds),
-        y = this.vertical.align(false, width, height, modifier, bounds),
+        x = this.horizontal.align(true, width, height, margin, bounds),
+        y = this.vertical.align(false, width, height, margin, bounds),
     )
+}
+
+public fun LayoutAlignment.place(width: Dp, height: Dp, modifier: Modifier, bounds: LayoutBounds): LayoutPosition {
+    return place(width, height, modifier.margin, bounds)
 }

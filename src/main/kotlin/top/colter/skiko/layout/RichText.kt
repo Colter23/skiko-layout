@@ -80,21 +80,21 @@ public class RichTextLayout(
             else -> Dp.NULL
         }
         val maxContentWidth = if (maxOuterWidth.isNotNull())
-            (maxOuterWidth - modifier.padding.horizontal).coerceAtLeast(0.dp)
+            (maxOuterWidth - resolvedPadding.horizontal).coerceAtLeast(0.dp)
         else 10000.dp
 
         val layout = resolveParagraph(maxContentWidth.px)
         if (width.isNull()) {
             width = layout.width.coerceAtMost(maxContentWidth.px.coerceAtLeast(0f)).toDp() +
-                    modifier.padding.horizontal
+                    resolvedPadding.horizontal
         }
-        if (height.isNull()) height = layout.height.toDp() + modifier.padding.vertical
+        if (height.isNull()) height = layout.height.toDp() + resolvedPadding.vertical
 
         finishMeasure()
     }
 
     override fun place(bounds: LayoutBounds) {
-        position = alignment.place(width, height, modifier, bounds)
+        position = alignment.place(width, height, resolvedMargin, bounds)
     }
 
     override fun draw(canvas: Canvas) {

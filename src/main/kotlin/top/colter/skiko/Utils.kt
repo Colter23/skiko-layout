@@ -17,16 +17,16 @@ public val emojiRegex: Regex = "$emojiCharacter(?:\\u200D$emojiCharacter)*".toRe
 private val defaultImageFilterMipmap = FilterMipmap(FilterMode.LINEAR, MipmapMode.NEAREST)
 
 
-public fun List<Layout>.sumWidth(): Dp = sumOf { width + modifier.margin.horizontal }
-public fun List<Layout>.sumHeight(): Dp = sumOf { height + modifier.margin.vertical }
+public fun List<Layout>.sumWidth(): Dp = sumOf { boxWidth }
+public fun List<Layout>.sumHeight(): Dp = sumOf { boxHeight }
 public fun List<Layout>.sumOf(block: Layout.() -> Dp): Dp {
     var x = 0.dp
     forEach { x += it.block() }
     return x
 }
 
-public fun List<Layout>.maxWidth(): Dp = maxOf { width + modifier.margin.horizontal }
-public fun List<Layout>.maxHeight(): Dp = maxOf { height + modifier.margin.vertical }
+public fun List<Layout>.maxWidth(): Dp = maxOf { boxWidth }
+public fun List<Layout>.maxHeight(): Dp = maxOf { boxHeight }
 public fun List<Layout>.maxOf(block: Layout.() -> Dp): Dp {
     var x = 0.dp
     forEach { x = Dp.max(x, it.block()) }

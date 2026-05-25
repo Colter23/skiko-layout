@@ -128,25 +128,25 @@ public class GridLayout(
         val totalHeight = rowList.fold(0.dp) { acc, row -> acc + rowHeight(row) } +
                 if (rowList.size > 1) space * (rowList.size - 1) else 0.dp
 
-        if (width.isNull()) width = totalWidth + modifier.padding.horizontal
-        if (height.isNull()) height = totalHeight + modifier.padding.vertical
+        if (width.isNull()) width = totalWidth + resolvedPadding.horizontal
+        if (height.isNull()) height = totalHeight + resolvedPadding.vertical
 
         finishMeasure()
     }
 
     override fun place(bounds: LayoutBounds) {
-        position = alignment.place(width, height, modifier, bounds)
+        position = alignment.place(width, height, resolvedMargin, bounds)
 
         var y = 0.dp
         rows().forEach { row ->
             var x = 0.dp
-            val rowTop = position.y + modifier.padding.top + y
+            val rowTop = position.y + resolvedPadding.top + y
             val rowHeight = rowHeight(row)
 
             row.forEach { layout ->
                 layout.place(
                     LayoutBounds.makeXYWH(
-                        left = position.x + modifier.padding.left + x,
+                        left = position.x + resolvedPadding.left + x,
                         top = rowTop,
                         width = layout.boxWidth,
                         height = rowHeight

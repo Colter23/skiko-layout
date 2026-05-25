@@ -60,15 +60,15 @@ public class ColumnLayout(
             }
 
             // 由子元素确定当前元素宽高
-            if (width.isNull()) width = child.maxWidth() + modifier.padding.horizontal
-            if (height.isNull()) height = child.sumHeight() + modifier.padding.vertical
+            if (width.isNull()) width = child.maxWidth() + resolvedPadding.horizontal
+            if (height.isNull()) height = child.sumHeight() + resolvedPadding.vertical
         }
         finishMeasure()
     }
 
     override fun place(bounds: LayoutBounds) {
         // 确定当前元素位置
-        position = alignment.place(width, height, modifier, bounds)
+        position = alignment.place(width, height, resolvedMargin, bounds)
 
         var y = 0.dp
         // 确定子元素位置
@@ -76,8 +76,8 @@ public class ColumnLayout(
             layout.place(
                 // 指定子元素最大边界
                 LayoutBounds.makeXYWH(
-                    left = position.x + modifier.padding.left,
-                    top = position.y + modifier.padding.top + y,
+                    left = position.x + resolvedPadding.left,
+                    top = position.y + resolvedPadding.top + y,
                     width = contentWidth,
                     height = layout.boxHeight
                 )

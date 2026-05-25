@@ -188,6 +188,91 @@ internal class DrawTest {
     }
 
     @Test
+    fun `regression padding ratio`() {
+        val root = measureRoot(
+            Modifier().width(400.dp).height(300.dp)
+        ) {
+            Box(
+                Modifier()
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .paddingRatio(horizontal = 0.1f, vertical = 0.2f)
+            ) {
+                Box(Modifier().fillMaxWidth().fillMaxHeight())
+            }
+        }
+
+        val outer = root.child.single() as BoxLayout
+        val inner = outer.child.single() as BoxLayout
+
+        assertEquals(400f, outer.width.px, 0.01f)
+        assertEquals(300f, outer.height.px, 0.01f)
+        assertEquals(320f, outer.contentWidth.px, 0.01f)
+        assertEquals(180f, outer.contentHeight.px, 0.01f)
+        assertEquals(40f, inner.position.x.px, 0.01f)
+        assertEquals(60f, inner.position.y.px, 0.01f)
+        assertEquals(320f, inner.width.px, 0.01f)
+        assertEquals(180f, inner.height.px, 0.01f)
+    }
+
+    @Test
+    fun `regression margin ratio`() {
+        val root = measureRoot(
+            Modifier().width(400.dp).height(300.dp)
+        ) {
+            Box(Modifier().fillMaxWidth().fillMaxHeight()) {
+                Box(
+                    Modifier()
+                        .width(100.dp)
+                        .height(80.dp)
+                        .marginRatio(horizontal = 0.1f, vertical = 0.2f)
+                )
+            }
+        }
+
+        val outer = root.child.single() as BoxLayout
+        val inner = outer.child.single() as BoxLayout
+
+        assertEquals(40f, inner.position.x.px, 0.01f)
+        assertEquals(60f, inner.position.y.px, 0.01f)
+        assertEquals(100f, inner.width.px, 0.01f)
+        assertEquals(80f, inner.height.px, 0.01f)
+        assertEquals(180f, inner.boxWidth.px, 0.01f)
+        assertEquals(200f, inner.boxHeight.px, 0.01f)
+    }
+
+    @Test
+    fun `regression grid item modifier ratio`() {
+        val root = measureRoot(
+            Modifier().width(320.dp).height(200.dp)
+        ) {
+            Grid(
+                maxLineCount = 2,
+                lockRatio = false,
+                modifier = Modifier().fillMaxWidth().fillMaxHeight(),
+                itemModifier = Modifier()
+                    .paddingRatio(horizontal = 0.1f, vertical = 0.05f)
+                    .marginRatio(horizontal = 0.05f, vertical = 0.1f)
+            ) {
+                Box(Modifier().width(100.dp).height(100.dp))
+                Box(Modifier().width(100.dp).height(100.dp))
+            }
+        }
+
+        val grid = root.child.single() as GridLayout
+        val first = grid.child[0]
+
+        assertEquals(100f, first.width.px, 0.01f)
+        assertEquals(100f, first.height.px, 0.01f)
+        assertEquals(36f, first.contentWidth.px, 0.01f)
+        assertEquals(80f, first.contentHeight.px, 0.01f)
+        assertEquals(16f, first.position.x.px, 0.01f)
+        assertEquals(20f, first.position.y.px, 0.01f)
+        assertEquals(132f, first.boxWidth.px, 0.01f)
+        assertEquals(140f, first.boxHeight.px, 0.01f)
+    }
+
+    @Test
     fun `regression min max constraints`() {
         val root = measureRoot(
             Modifier().width(320.dp).height(260.dp)

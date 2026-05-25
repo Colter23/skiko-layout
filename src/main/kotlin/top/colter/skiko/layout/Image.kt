@@ -46,10 +46,10 @@ public class ImageLayout(
     private fun naturalRatio(): Float = if (ratio != 0f) ratio else image.width.toFloat() / image.height.toFloat()
 
     private fun contentWidthFromOuter(outerWidth: Dp): Dp =
-        (outerWidth - modifier.padding.horizontal).coerceAtLeast(0.dp)
+        (outerWidth - resolvedPadding.horizontal).coerceAtLeast(0.dp)
 
     private fun contentHeightFromOuter(outerHeight: Dp): Dp =
-        (outerHeight - modifier.padding.vertical).coerceAtLeast(0.dp)
+        (outerHeight - resolvedPadding.vertical).coerceAtLeast(0.dp)
 
     private fun fitRatioSize(
         preferredWidth: Float,
@@ -122,7 +122,7 @@ public class ImageLayout(
             explicitWidth -> width
             modifier.maxWidth.isNotNull() -> modifier.maxWidth
             availableWidth.isNotNull() && !modifier.fillWidth && !modifier.fillMaxWidth -> availableWidth
-            else -> naturalWidth + modifier.padding.horizontal
+            else -> naturalWidth + resolvedPadding.horizontal
         }
 
         val preferredOuterHeight = when {
@@ -147,8 +147,8 @@ public class ImageLayout(
             contentWidth = if (contentHeight > 0.dp) (contentHeight.px * aspectRatio).toDp() else naturalWidth
         }
 
-        val minContentWidth = (modifier.minWidth - modifier.padding.horizontal).coerceAtLeast(0.dp).px
-        val minContentHeight = (modifier.minHeight - modifier.padding.vertical).coerceAtLeast(0.dp).px
+        val minContentWidth = (modifier.minWidth - resolvedPadding.horizontal).coerceAtLeast(0.dp).px
+        val minContentHeight = (modifier.minHeight - resolvedPadding.vertical).coerceAtLeast(0.dp).px
         val maxContentWidth = if (modifier.maxWidth.isNotNull()) contentWidthFromOuter(modifier.maxWidth).px else Float.POSITIVE_INFINITY
         val maxContentHeight = if (modifier.maxHeight.isNotNull()) contentHeightFromOuter(modifier.maxHeight).px else Float.POSITIVE_INFINITY
 
@@ -161,14 +161,14 @@ public class ImageLayout(
             maxHeight = maxContentHeight
         )
 
-        width = fitted.first.toDp() + modifier.padding.horizontal
-        height = fitted.second.toDp() + modifier.padding.vertical
+        width = fitted.first.toDp() + resolvedPadding.horizontal
+        height = fitted.second.toDp() + resolvedPadding.vertical
 
         finishMeasure()
     }
 
     override fun place(bounds: LayoutBounds) {
-        position = alignment.place(width, height, modifier, bounds)
+        position = alignment.place(width, height, resolvedMargin, bounds)
     }
 
     override fun draw(canvas: Canvas) {

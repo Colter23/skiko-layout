@@ -22,6 +22,8 @@ import top.colter.skiko.data.*
  * @property fillRatioHeight 按比例继承父元素高度
  * @property padding 内边距
  * @property margin 外边距
+ * @property paddingRatio 比例内边距，按父级内容区解析
+ * @property marginRatio 比例外边距，按父级内容区解析
  * @property background 背景
  * @property border 边框
  * @property shadows 阴影
@@ -46,6 +48,8 @@ public class Modifier(
 
     public var padding: Edge = Edge(),
     public var margin: Edge = Edge(),
+    public var paddingRatio: EdgeRatio? = null,
+    public var marginRatio: EdgeRatio? = null,
 
     public var aspectRatio: Float = 0f,
     public var shape: BoxShape = BoxShape.Rectangle,
@@ -138,7 +142,10 @@ public fun Modifier.fillRatioHeight(ratio: Float): Modifier  {
  * 外边距
  * @param edge [Edge]
  */
-public fun Modifier.margin(edge: Edge): Modifier = apply { this.margin = edge }
+public fun Modifier.margin(edge: Edge): Modifier = apply {
+    this.margin = edge
+    this.marginRatio = null
+}
 /**
  * 外边距
  * @param top 上边距
@@ -165,12 +172,49 @@ public fun Modifier.margin(edge: Dp): Modifier {
     return margin(Edge(edge, edge, edge, edge))
 }
 
+/**
+ * 比例外边距
+ * @param edge [EdgeRatio]
+ */
+public fun Modifier.marginRatio(edge: EdgeRatio): Modifier = apply {
+    this.marginRatio = edge
+    this.margin = Edge()
+}
+/**
+ * 比例外边距
+ * @param top 上边距比例
+ * @param right 右边距比例
+ * @param bottom 下边距比例
+ * @param left 左边距比例
+ */
+public fun Modifier.marginRatio(top: Float = 0f, right: Float = 0f, bottom: Float = 0f, left: Float = 0f): Modifier {
+    return marginRatio(EdgeRatio(top, right, bottom, left))
+}
+/**
+ * 比例外边距
+ * @param horizontal 水平边距比例
+ * @param vertical 垂直边距比例
+ */
+public fun Modifier.marginRatio(horizontal: Float = 0f, vertical: Float = 0f): Modifier {
+    return marginRatio(EdgeRatio(vertical, horizontal, vertical, horizontal))
+}
+/**
+ * 比例外边距
+ * @param edge 四边边距比例
+ */
+public fun Modifier.marginRatio(edge: Float): Modifier {
+    return marginRatio(EdgeRatio(edge, edge, edge, edge))
+}
+
 
 /**
  * 内边距
  * @param edge [Edge]
  */
-public fun Modifier.padding(edge: Edge): Modifier = apply { this.padding = edge }
+public fun Modifier.padding(edge: Edge): Modifier = apply {
+    this.padding = edge
+    this.paddingRatio = null
+}
 /**
  * 内边距
  * @param top 上边距
@@ -195,6 +239,40 @@ public fun Modifier.padding(horizontal: Dp = 0.dp, vertical: Dp = 0.dp): Modifie
  */
 public fun Modifier.padding(edge: Dp): Modifier {
     return padding(Edge(edge, edge, edge, edge))
+}
+
+/**
+ * 比例内边距
+ * @param edge [EdgeRatio]
+ */
+public fun Modifier.paddingRatio(edge: EdgeRatio): Modifier = apply {
+    this.paddingRatio = edge
+    this.padding = Edge()
+}
+/**
+ * 比例内边距
+ * @param top 上边距比例
+ * @param right 右边距比例
+ * @param bottom 下边距比例
+ * @param left 左边距比例
+ */
+public fun Modifier.paddingRatio(top: Float = 0f, right: Float = 0f, bottom: Float = 0f, left: Float = 0f): Modifier {
+    return paddingRatio(EdgeRatio(top, right, bottom, left))
+}
+/**
+ * 比例内边距
+ * @param horizontal 水平边距比例
+ * @param vertical 垂直边距比例
+ */
+public fun Modifier.paddingRatio(horizontal: Float = 0f, vertical: Float = 0f): Modifier {
+    return paddingRatio(EdgeRatio(vertical, horizontal, vertical, horizontal))
+}
+/**
+ * 比例内边距
+ * @param edge 四边边距比例
+ */
+public fun Modifier.paddingRatio(edge: Float): Modifier {
+    return paddingRatio(EdgeRatio(edge, edge, edge, edge))
 }
 
 
@@ -371,8 +449,20 @@ public fun Modifier.merge(modifier: Modifier) {
     if (modifier.fillHeight) fillHeight = true
     if (modifier.fillMaxHeight) fillMaxHeight = true
 
-    if (modifier.padding.isNotEmpty()) padding = modifier.padding
-    if (modifier.margin.isNotEmpty()) margin = modifier.margin
+    if (modifier.paddingRatio != null) {
+        paddingRatio = modifier.paddingRatio
+        padding = Edge()
+    } else if (modifier.padding.isNotEmpty()) {
+        padding = modifier.padding
+        paddingRatio = null
+    }
+    if (modifier.marginRatio != null) {
+        marginRatio = modifier.marginRatio
+        margin = Edge()
+    } else if (modifier.margin.isNotEmpty()) {
+        margin = modifier.margin
+        marginRatio = null
+    }
     if (modifier.aspectRatio != 0f) aspectRatio = modifier.aspectRatio
     if (modifier.shape != BoxShape.Rectangle) shape = modifier.shape
 

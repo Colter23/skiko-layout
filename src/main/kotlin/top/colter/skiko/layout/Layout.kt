@@ -2,6 +2,7 @@ package top.colter.skiko.layout
 
 import org.jetbrains.skia.*
 import top.colter.skiko.*
+import top.colter.skiko.data.Edge
 import top.colter.skiko.data.BoxShape
 import top.colter.skiko.data.AxisAlignment
 import top.colter.skiko.data.Border
@@ -63,6 +64,10 @@ public abstract class Layout(
     // 子元素列表
     public var child: MutableList<Layout> = mutableListOf()
 
+    // 解析后的实际边距快照
+    internal var resolvedPadding: Edge = modifier.padding
+    internal var resolvedMargin: Edge = modifier.margin
+
     internal val drawFillPaint: Paint = Paint().apply {
         isAntiAlias = true
     }
@@ -81,22 +86,22 @@ public abstract class Layout(
 
     // 内容宽高（不包括内外边距）
     public val contentWidth: Dp
-        get() = if (width.isNotNull() && width - modifier.padding.horizontal > 0.dp) width - modifier.padding.horizontal else 0.dp
+        get() = if (width.isNotNull() && width - resolvedPadding.horizontal > 0.dp) width - resolvedPadding.horizontal else 0.dp
     public val contentHeight: Dp
-        get() = if (height.isNotNull() && height - modifier.padding.vertical > 0.dp) height - modifier.padding.vertical else 0.dp
+        get() = if (height.isNotNull() && height - resolvedPadding.vertical > 0.dp) height - resolvedPadding.vertical else 0.dp
 
     // 元素边界（包括内外边距）
-    public val boxWidth: Dp get() = width + modifier.margin.horizontal
-    public val boxHeight: Dp get() = height + modifier.margin.vertical
+    public val boxWidth: Dp get() = width + resolvedMargin.horizontal
+    public val boxHeight: Dp get() = height + resolvedMargin.vertical
 
     protected fun availableParentWidth(): Dp {
         val parentWidth = parentLayout?.contentWidth ?: Dp.NULL
-        return if (parentWidth.isNotNull()) (parentWidth - modifier.margin.horizontal).coerceAtLeast(0.dp) else Dp.NULL
+        return if (parentWidth.isNotNull()) (parentWidth - resolvedMargin.horizontal).coerceAtLeast(0.dp) else Dp.NULL
     }
 
     protected fun availableParentHeight(): Dp {
         val parentHeight = parentLayout?.contentHeight ?: Dp.NULL
-        return if (parentHeight.isNotNull()) (parentHeight - modifier.margin.vertical).coerceAtLeast(0.dp) else Dp.NULL
+        return if (parentHeight.isNotNull()) (parentHeight - resolvedMargin.vertical).coerceAtLeast(0.dp) else Dp.NULL
     }
 
     protected fun constrainWidth(value: Dp): Dp = constrainSize(value, modifier.minWidth, modifier.maxWidth, "width")
@@ -126,20 +131,22 @@ public abstract class Layout(
         if (width.isNull() && modifier.width.isNotNull()) width = constrainWidth(modifier.width)
         if (height.isNull() && modifier.height.isNotNull()) height = constrainHeight(modifier.height)
 
+        resolveEdges()
+
         val parentContentWidth = parentLayout?.contentWidth ?: Dp.NULL
         val parentContentHeight = parentLayout?.contentHeight ?: Dp.NULL
 
         // 由父元素继承宽高且父元素宽高确定
         if (width.isNull() && modifier.fillMaxWidth && parentContentWidth.isNotNull())
-            width = constrainWidth((parentContentWidth - modifier.margin.horizontal).coerceAtLeast(0.dp))
+            width = constrainWidth((parentContentWidth - resolvedMargin.horizontal).coerceAtLeast(0.dp))
         if (height.isNull() && modifier.fillMaxHeight && parentContentHeight.isNotNull())
-            height = constrainHeight((parentContentHeight - modifier.margin.vertical).coerceAtLeast(0.dp))
+            height = constrainHeight((parentContentHeight - resolvedMargin.vertical).coerceAtLeast(0.dp))
 
         // 按比例继承父元素宽高且父元素宽高确定
         if (width.isNull() && modifier.fillRatioWidth != 0f && parentContentWidth.isNotNull())
-            width = constrainWidth((parentContentWidth * modifier.fillRatioWidth - modifier.margin.horizontal).coerceAtLeast(0.dp))
+            width = constrainWidth((parentContentWidth * modifier.fillRatioWidth - resolvedMargin.horizontal).coerceAtLeast(0.dp))
         if (height.isNull() && modifier.fillRatioHeight != 0f && parentContentHeight.isNotNull())
-            height = constrainHeight((parentContentHeight * modifier.fillRatioHeight - modifier.margin.vertical).coerceAtLeast(0.dp))
+            height = constrainHeight((parentContentHeight * modifier.fillRatioHeight - resolvedMargin.vertical).coerceAtLeast(0.dp))
 
         if (modifier.aspectRatio > 0f) {
             when {
@@ -154,6 +161,14 @@ public abstract class Layout(
 
         if (width.isNotNull()) width = constrainWidth(width)
         if (height.isNotNull()) height = constrainHeight(height)
+    }
+
+    protected fun resolveEdges() {
+        val parentContentWidth = parentLayout?.contentWidth ?: Dp.NULL
+        val parentContentHeight = parentLayout?.contentHeight ?: Dp.NULL
+
+        resolvedPadding = modifier.paddingRatio?.resolve(parentContentWidth, parentContentHeight) ?: modifier.padding
+        resolvedMargin = modifier.marginRatio?.resolve(parentContentWidth, parentContentHeight) ?: modifier.margin
     }
 
     /**
@@ -313,8 +328,8 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
     // 绘制内容
     if (contentWidth > 0.dp && contentHeight > 0.dp) {
         val contentRRect = RRect.makeComplexXYWH(
-            position.x.px + modifier.padding.left.px,
-            position.y.px + modifier.padding.top.px,
+            position.x.px + resolvedPadding.left.px,
+            position.y.px + resolvedPadding.top.px,
             contentWidth.px,
             contentHeight.px,
             floatArrayOf(0f, 0f, 0f, 0f)

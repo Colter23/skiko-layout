@@ -60,15 +60,15 @@ public class RowLayout(
             }
 
             // 由子元素确定当前元素宽高
-            if (width.isNull()) width = child.sumWidth() + modifier.padding.horizontal
-            if (height.isNull()) height = child.maxHeight() + modifier.padding.vertical
+            if (width.isNull()) width = child.sumWidth() + resolvedPadding.horizontal
+            if (height.isNull()) height = child.maxHeight() + resolvedPadding.vertical
         }
         finishMeasure()
     }
 
     override fun place(bounds: LayoutBounds) {
         // 确定当前元素位置
-        position = alignment.place(width, height, modifier, bounds)
+        position = alignment.place(width, height, resolvedMargin, bounds)
 
         var x = 0.dp
         // 确定子元素位置
@@ -76,8 +76,8 @@ public class RowLayout(
             layout.place(
                 // 指定子元素最大边界
                 LayoutBounds.makeXYWH(
-                    left = position.x + modifier.padding.left + x,
-                    top = position.y + modifier.padding.top,
+                    left = position.x + resolvedPadding.left + x,
+                    top = position.y + resolvedPadding.top,
                     width = layout.boxWidth,
                     height = contentHeight
                 )

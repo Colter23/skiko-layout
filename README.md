@@ -6,7 +6,7 @@
 
 目前还是测试版，会有很多bug，所有api均可能发生变动
 
-以下代码可在 [DrawTest](src/test/kotlin/DrawTest.kt) 中找到
+示例代码可在 [DrawPreview](src/test/kotlin/DrawPreview.kt) 和 [DrawTest](src/test/kotlin/DrawTest.kt) 中找到
 
 有问题都可加群学习交流 QQ群：734922374
 
@@ -61,6 +61,8 @@ dp 默认与 px 1:1 转换
 按比例继承父元素高度 `fillRatioHeight`    
 内边距 `padding`    
 外边距 `margin`    
+比例内边距 `paddingRatio`
+比例外边距 `marginRatio`
 背景 `background`  
 边框 `border`    
 阴影 `shadows`   
@@ -171,6 +173,14 @@ View(
     }
 }
 ```
+
+`paddingRatio` / `marginRatio` 以父级内容区为基准，适合容器固定时做等比例留白。
+建议配合固定宽高或 `fillMax*` 使用，父级尺寸未确定时比例边距不会有稳定基准。
+
+## 测试与预览
+
+- [DrawPreview](src/test/kotlin/DrawPreview.kt) 用来直接生成图片，运行 `main()` 就会写出预览图
+- [DrawTest](src/test/kotlin/DrawTest.kt) 只做自动化回归和性能烟雾测试
 
 ## 宫格 阴影
 
