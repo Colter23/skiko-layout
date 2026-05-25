@@ -2,7 +2,9 @@ package top.colter.skiko.layout
 
 import org.jetbrains.skia.*
 import top.colter.skiko.*
+import top.colter.skiko.data.BoxShape
 import top.colter.skiko.data.AxisAlignment
+import top.colter.skiko.data.Border
 
 
 /**
@@ -139,6 +141,17 @@ public abstract class Layout(
         if (height.isNull() && modifier.fillRatioHeight != 0f && parentContentHeight.isNotNull())
             height = constrainHeight((parentContentHeight * modifier.fillRatioHeight - modifier.margin.vertical).coerceAtLeast(0.dp))
 
+        if (modifier.aspectRatio > 0f) {
+            when {
+                width.isNotNull() && height.isNull() -> {
+                    height = constrainHeight((width.px / modifier.aspectRatio).toDp())
+                }
+                height.isNotNull() && width.isNull() -> {
+                    width = constrainWidth((height.px * modifier.aspectRatio).toDp())
+                }
+            }
+        }
+
         if (width.isNotNull()) width = constrainWidth(width)
         if (height.isNotNull()) height = constrainHeight(height)
     }
@@ -223,16 +236,9 @@ public data class LayoutBounds(
  */
 public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}) {
 
-    // 圆角
+    // 圆角 / 形状
     val border = modifier.border
-    val radius = drawCornerRadii
-    if (border == null) {
-        radius.fill(0f)
-    } else {
-        for (index in 0 until radius.size) {
-            radius[index] = border.radius.getOrElse(index) { 0.dp }.px
-        }
-    }
+    val radius = resolveCornerRadius(border)
 
     val rrect = RRect.makeComplexXYWH(
         position.x.px,
@@ -330,6 +336,40 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
             isAntiAlias = true
         })
     }
+}
+
+private fun Layout.resolveCornerRadius(border: Border?): FloatArray {
+    val radius = drawCornerRadii
+    val maxRadius = if (width.isNotNull() && height.isNotNull()) minOf(width.px, height.px) / 2f else Float.MAX_VALUE
+
+    fun clamp(value: Float): Float = value.coerceAtLeast(0f).coerceAtMost(maxRadius)
+
+    when (val shape = modifier.shape) {
+        BoxShape.Rectangle -> {
+            val source = border?.radius ?: emptyList()
+            for (index in 0 until radius.size) {
+                radius[index] = clamp(source.getOrElse(index) { 0.dp }.px)
+            }
+        }
+
+        is BoxShape.Rounded -> {
+            for (index in 0 until radius.size) {
+                radius[index] = clamp(shape.radius.getOrElse(index) { 0.dp }.px)
+            }
+        }
+
+        is BoxShape.RelativeRounded -> {
+            val value = clamp(minOf(width.px, height.px) * shape.ratio)
+            radius.fill(value)
+        }
+
+        BoxShape.Circle -> {
+            val value = clamp(minOf(width.px, height.px) / 2f)
+            radius.fill(value)
+        }
+    }
+
+    return radius
 }
 
 

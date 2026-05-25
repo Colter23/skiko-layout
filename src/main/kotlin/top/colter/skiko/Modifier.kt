@@ -47,6 +47,9 @@ public class Modifier(
     public var padding: Edge = Edge(),
     public var margin: Edge = Edge(),
 
+    public var aspectRatio: Float = 0f,
+    public var shape: BoxShape = BoxShape.Rectangle,
+
     public var background: Background? = null,
     public var border: Border? = null,
     public var shadows: ArrayList<Shadow> = arrayListOf()
@@ -219,6 +222,44 @@ public fun Modifier.fillWidth(): Modifier = apply { fillWidth = true }
  */
 public fun Modifier.fillHeight(): Modifier = apply { fillHeight = true }
 
+/**
+ * 宽高比
+ */
+public fun Modifier.aspectRatio(ratio: Float): Modifier = apply {
+    require(ratio > 0f) { "aspect ratio require > 0" }
+    this.aspectRatio = ratio
+}
+
+/**
+ * 形状
+ */
+public fun Modifier.shape(shape: BoxShape): Modifier = apply {
+    this.shape = shape
+}
+
+/**
+ * 圆角
+ */
+public fun Modifier.radius(radius: Dp): Modifier = radius(listOf(radius, radius, radius, radius))
+
+/**
+ * 圆角
+ */
+public fun Modifier.radius(radius: List<Dp>): Modifier = shape(BoxShape.Rounded(radius))
+
+/**
+ * 相对圆角
+ */
+public fun Modifier.radiusRatio(ratio: Float): Modifier = shape(BoxShape.RelativeRounded(ratio))
+
+/**
+ * 圆形
+ */
+public fun Modifier.circle(): Modifier = apply {
+    shape = BoxShape.Circle
+    aspectRatio = 1f
+}
+
 
 /**
  * 背景
@@ -242,7 +283,12 @@ public fun Modifier.background(color: Int? = null, gradient: Gradient? = null, i
  * 边框
  * @param border [Border]
  */
-public fun Modifier.border(border: Border): Modifier = apply { this.border = border }
+public fun Modifier.border(border: Border): Modifier = apply {
+    this.border = border
+    if (shape == BoxShape.Rectangle && border.radius.any { it > 0.dp }) {
+        shape = BoxShape.Rounded(border.radius)
+    }
+}
 /**
  * 边框
  * @param width 宽度
@@ -254,7 +300,9 @@ public fun Modifier.border(
     radius: List<Dp> = listOf(0.dp, 0.dp, 0.dp, 0.dp),
     color: Int = Color.WHITE,
 ): Modifier {
-    return border(Border(width, radius, color))
+    border(Border(width, radius, color))
+    if (radius.any { it > 0.dp }) shape = BoxShape.Rounded(radius)
+    return this
 }
 /**
  * 边框
@@ -267,7 +315,10 @@ public fun Modifier.border(
     radius: Dp,
     color: Int = Color.WHITE,
 ): Modifier {
-    return border(Border(width, listOf(radius, radius, radius, radius), color))
+    val radii = listOf(radius, radius, radius, radius)
+    border(Border(width, radii, color))
+    if (radius > 0.dp) shape = BoxShape.Rounded(radii)
+    return this
 }
 
 
@@ -322,6 +373,8 @@ public fun Modifier.merge(modifier: Modifier) {
 
     if (modifier.padding.isNotEmpty()) padding = modifier.padding
     if (modifier.margin.isNotEmpty()) margin = modifier.margin
+    if (modifier.aspectRatio != 0f) aspectRatio = modifier.aspectRatio
+    if (modifier.shape != BoxShape.Rectangle) shape = modifier.shape
 
     if (modifier.background != null) background = modifier.background
     if (modifier.border != null) border = modifier.border

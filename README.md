@@ -15,14 +15,14 @@ v0.0.2升级v0.0.3请看 [v0.0.3](https://github.com/Colter23/skiko-layout/relea
 ## 使用
 ### Gradle
 ```kotlin
-implementation("top.colter.skiko:skiko-layout:0.0.3")
+implementation("top.colter.skiko:skiko-layout:0.0.4")
 ```
 ### Maven
 ```xml
 <dependency>
     <groupId>top.colter.skiko</groupId>
     <artifactId>skiko-layout</artifactId>
-    <version>0.0.3</version>
+    <version>0.0.4</version>
 </dependency>
 ```
 ## 单位
@@ -49,10 +49,10 @@ dp 默认与 px 1:1 转换
 `Modifier`    
 宽度 `width`    
 高度 `height`    
-最小宽度 `minWidth` (暂时没用)    
-最小高度 `minHeight` (暂时没用)    
-最大宽度 `maxWidth` (暂时没用)    
-最大高度 `maxHeight` (暂时没用)    
+最小宽度 `minWidth`    
+最小高度 `minHeight`    
+最大宽度 `maxWidth`    
+最大高度 `maxHeight`    
 填充剩余宽度 `fillWidth`    
 填充剩余高度 `fillHeight`    
 继承父元素宽度 `fillMaxWidth`    
@@ -63,7 +63,11 @@ dp 默认与 px 1:1 转换
 外边距 `margin`    
 背景 `background`  
 边框 `border`    
-阴影 `shadows`    
+阴影 `shadows`   
+圆角 `radius` (v0.0.4)    
+比例圆角 `radiusRatio` (v0.0.4)    
+圆形 `circle` (v0.0.4)    
+形状 `shape` (v0.0.4)    
 
 ## 布局
 
