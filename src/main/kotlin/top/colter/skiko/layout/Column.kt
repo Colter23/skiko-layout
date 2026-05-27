@@ -35,8 +35,37 @@ public inline fun Layout.Column(
 public class ColumnLayout(
     public val alignment: LayoutAlignment,
     modifier: Modifier,
-    parentLayout: Layout?
-) : Layout(modifier, parentLayout) {
+    parentLayout: Layout?,
+    fontRegistry: FontRegistry = parentLayout?.fontRegistry ?: Fonts.default,
+) : Layout(modifier, parentLayout, fontRegistry) {
+
+    private fun measureChildren(deep: Boolean) {
+        if (!deep) return
+
+        if (height.isNull()) {
+            child.forEach { it.measure(true) }
+            return
+        }
+
+        child.forEach { it.preMeasure() }
+
+        val fillChildren = child.filter { it.modifier.fillHeight }
+        val fixedChildren = child.filter { !it.modifier.fillHeight }
+
+        fixedChildren.forEach { it.measure(true) }
+
+        fillChildren.ifNotEmpty {
+            val fixedHeight = fixedChildren.sumHeight()
+            val fillMargin = sumOf { resolvedMargin.vertical }
+            val remainingHeight = (paintContentHeight - fixedHeight - fillMargin).coerceAtLeast(0.dp)
+            val itemHeight = remainingHeight / size
+
+            forEach {
+                it.height = itemHeight
+                it.measure(true)
+            }
+        }
+    }
 
     override fun measure(deep: Boolean) {
         // 第一遍计算宽高
@@ -44,20 +73,7 @@ public class ColumnLayout(
 
         if (child.isNotEmpty()) {
             // 重新计算子元素宽高
-            if (deep) child.forEach { it.measure(true) }
-
-            // 指定子元素高度
-            if (height.isNotNull()) {
-                val sh = contentHeight - child.sumHeight()
-                if (sh > 0.dp) {
-                    child.filter { it.modifier.fillHeight }.ifNotEmpty {
-                        forEach {
-                            it.height = sh / size
-                            it.measure(true)
-                        }
-                    }
-                }
-            }
+            measureChildren(deep)
 
             // 由子元素确定当前元素宽高
             if (width.isNull()) width = child.maxWidth() + resolvedPadding.horizontal
@@ -69,6 +85,7 @@ public class ColumnLayout(
     override fun place(bounds: LayoutBounds) {
         // 确定当前元素位置
         position = alignment.place(width, height, resolvedMargin, bounds)
+        resolvePaintBounds()
 
         var y = 0.dp
         // 确定子元素位置
@@ -76,9 +93,9 @@ public class ColumnLayout(
             layout.place(
                 // 指定子元素最大边界
                 LayoutBounds.makeXYWH(
-                    left = position.x + resolvedPadding.left,
-                    top = position.y + resolvedPadding.top + y,
-                    width = contentWidth,
+                    left = paintX + resolvedPadding.left,
+                    top = paintY + resolvedPadding.top + y,
+                    width = paintContentWidth,
                     height = layout.boxHeight
                 )
             )

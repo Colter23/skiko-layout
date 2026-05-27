@@ -63,6 +63,10 @@ dp 默认与 px 1:1 转换
 外边距 `margin`    
 比例内边距 `paddingRatio`
 比例外边距 `marginRatio`
+视觉宽度比例 `overflowRatioWidth`
+视觉高度比例 `overflowRatioHeight`
+视觉外扩 `bleed` / `bleedRatio`
+视觉偏移 `offset` / `offsetRatio`
 背景 `background`  
 边框 `border`    
 阴影 `shadows`   
@@ -176,6 +180,23 @@ View(
 
 `paddingRatio` / `marginRatio` 以父级内容区为基准，适合容器固定时做等比例留白。
 建议配合固定宽高或 `fillMax*` 使用，父级尺寸未确定时比例边距不会有稳定基准。
+
+`overflowRatioWidth` / `overflowRatioHeight`、`bleedRatio`、`offsetRatio` 是视觉外溢语义。
+它们只影响背景、边框、裁剪和子元素可用区域，不改变父元素自动测量、`Row` / `Grid` 占位和兄弟元素位置。
+需要“超出父元素但不撑开父元素”时，优先使用这些 API，而不是负 `marginRatio` 或大于 1 的 `fillRatio*`。
+
+```kotlin
+Box(Modifier().width(300.dp)) {
+    Box(
+        Modifier()
+            .fillMaxWidth()
+            .overflowRatioWidth(1.2f)
+            .background(Color.RED)
+    )
+}
+```
+
+`bleedRatio(left = 0.1f)` 表示向左额外绘制父级内容宽度的 10%，`offsetRatio(x = -0.1f)` 表示视觉上向左移动父级内容宽度的 10%。
 
 ## 测试与预览
 

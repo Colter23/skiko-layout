@@ -50,6 +50,7 @@ fun main() {
     generateParagraph()
     generateViewLayout1()
     generateEdgeRatio()
+    generateVisualOverflow()
     generateMixTypeset()
     generateGrid()
     generateShadow()
@@ -221,6 +222,101 @@ private fun generateEdgeRatio() {
         }
     }
     println("generated edge_ratio.png")
+}
+
+private fun generateVisualOverflow() {
+    View(
+        file = previewOutput.resolve("visual_overflow.png"),
+        modifier = Modifier()
+            .width(1000.dp)
+            .height(560.dp)
+            .padding(60.dp)
+            .background(Color.makeRGB(238, 242, 247))
+    ) {
+        Column(Modifier().fillMaxWidth().fillMaxHeight()) {
+            Box(
+                Modifier()
+                    .fillMaxWidth()
+                    .height(130.dp)
+                    .margin(bottom = 36.dp)
+                    .background(Color.WHITE)
+                    .border(2.dp, 18.dp, Color.makeRGB(190, 200, 220))
+            ) {
+                Box(
+                    Modifier()
+                        .fillMaxWidth()
+                        .fillMaxHeight()
+                        .overflowRatioWidth(1.16f)
+                        .background(Color.RED.withAlpha(0.72f))
+                        .border(4.dp, 26.dp, Color.WHITE)
+                )
+            }
+
+            Row(Modifier().fillMaxWidth().height(130.dp).margin(bottom = 36.dp)) {
+                Box(
+                    Modifier()
+                        .width(280.dp)
+                        .fillMaxHeight()
+                        .margin(right = 40.dp)
+                        .background(Color.WHITE)
+                        .border(2.dp, 18.dp, Color.makeRGB(190, 200, 220))
+                ) {
+                    Box(
+                        Modifier()
+                            .width(120.dp)
+                            .height(70.dp)
+                            .bleedRatio(left = 0.16f, right = 0.08f, top = 0.12f)
+                            .background(Color.GREEN.withAlpha(0.78f))
+                            .border(4.dp, 18.dp, Color.WHITE)
+                    )
+                }
+
+                Box(
+                    Modifier()
+                        .fillWidth()
+                        .fillMaxHeight()
+                        .background(Color.WHITE)
+                        .border(2.dp, 18.dp, Color.makeRGB(190, 200, 220))
+                ) {
+                    Box(
+                        Modifier()
+                            .width(180.dp)
+                            .height(80.dp)
+                            .offsetRatio(x = -0.12f)
+                            .background(Color.BLUE.withAlpha(0.72f))
+                            .border(4.dp, 20.dp, Color.WHITE)
+                    )
+                }
+            }
+
+            Box(
+                Modifier()
+                    .fillMaxWidth()
+                    .height(130.dp)
+                    .background(Color.WHITE)
+                    .border(2.dp, 18.dp, Color.makeRGB(190, 200, 220))
+            ) {
+                Box(
+                    Modifier()
+                        .fillMaxWidth()
+                        .fillMaxHeight()
+                        .padding(18.dp)
+                        .overflowRatioWidth(1.1f)
+                        .background(Color.makeRGB(255, 194, 71).withAlpha(0.8f))
+                        .border(4.dp, 24.dp, Color.WHITE)
+                ) {
+                    Box(
+                        Modifier()
+                            .fillMaxWidth()
+                            .fillMaxHeight()
+                            .circle()
+                            .background(Color.makeRGB(58, 172, 138))
+                    )
+                }
+            }
+        }
+    }
+    println("generated visual_overflow.png")
 }
 
 private fun Layout.richParagraphPreview(modifier: Modifier) {

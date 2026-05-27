@@ -57,8 +57,9 @@ public class GridLayout(
     public val lockRatio: Boolean,
     public val alignment: LayoutAlignment,
     modifier: Modifier,
-    parentLayout: Layout?
-) : Layout(modifier, parentLayout) {
+    parentLayout: Layout?,
+    fontRegistry: FontRegistry = parentLayout?.fontRegistry ?: Fonts.default,
+) : Layout(modifier, parentLayout, fontRegistry) {
 
     private fun rows(): List<List<Layout>> = child.chunked(maxLineCount)
 
@@ -83,11 +84,11 @@ public class GridLayout(
         val columnCount = child.size.coerceAtMost(maxLineCount).coerceAtLeast(1)
 
         val widthLimit = if (width.isNotNull()) {
-            ((contentWidth - space * (columnCount - 1)).coerceAtLeast(0.dp) / columnCount)
+            ((paintContentWidth - space * (columnCount - 1)).coerceAtLeast(0.dp) / columnCount)
         } else null
 
         val heightLimit = if (height.isNotNull()) {
-            ((contentHeight - space * (rowCount - 1)).coerceAtLeast(0.dp) / rowCount)
+            ((paintContentHeight - space * (rowCount - 1)).coerceAtLeast(0.dp) / rowCount)
         } else null
 
         return when {
@@ -136,17 +137,18 @@ public class GridLayout(
 
     override fun place(bounds: LayoutBounds) {
         position = alignment.place(width, height, resolvedMargin, bounds)
+        resolvePaintBounds()
 
         var y = 0.dp
         rows().forEach { row ->
             var x = 0.dp
-            val rowTop = position.y + resolvedPadding.top + y
+            val rowTop = paintY + resolvedPadding.top + y
             val rowHeight = rowHeight(row)
 
             row.forEach { layout ->
                 layout.place(
                     LayoutBounds.makeXYWH(
-                        left = position.x + resolvedPadding.left + x,
+                        left = paintX + resolvedPadding.left + x,
                         top = rowTop,
                         width = layout.boxWidth,
                         height = rowHeight

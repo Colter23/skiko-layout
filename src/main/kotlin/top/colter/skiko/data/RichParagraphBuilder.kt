@@ -2,8 +2,7 @@ package top.colter.skiko.data
 
 import org.jetbrains.skia.Image
 import org.jetbrains.skia.paragraph.TextStyle
-import kotlin.reflect.full.declaredMemberFunctions
-import kotlin.reflect.full.declaredMemberProperties
+import top.colter.skiko.copyStyle
 
 
 /**
@@ -40,7 +39,7 @@ public class RichParagraphBuilder private constructor(
     private val lines: MutableList<RichLine>,
     private var line: MutableList<RichText>,
 ) {
-    public constructor(defaultStyle: TextStyle): this(defaultStyle.clone(), mutableListOf(), mutableListOf())
+    public constructor(defaultStyle: TextStyle): this(defaultStyle.copyStyle(), mutableListOf(), mutableListOf())
 
     /**
      * 添加富文本
@@ -54,14 +53,14 @@ public class RichParagraphBuilder private constructor(
      * 添加文本、样式
      */
     public fun addText(text: String, style: TextStyle? = null): RichParagraphBuilder {
-        return addRichText(RichText.Text(text, style?.clone()))
+        return addRichText(RichText.Text(text, style?.copyStyle()))
     }
 
     /**
      * 添加emoji，可指定emoji图片
      */
     public fun addEmoji(value: String, img: Image, style: TextStyle? = null): RichParagraphBuilder {
-        return addRichText(RichText.Emoji(value, img, style?.clone()))
+        return addRichText(RichText.Emoji(value, img, style?.copyStyle()))
     }
 
     /**
@@ -80,20 +79,4 @@ public class RichParagraphBuilder private constructor(
         if (line.isNotEmpty()) wrap()
         return RichParagraph(defaultStyle, lines)
     }
-}
-
-/**
- * 深度克隆字体样式
- */
-private fun TextStyle.clone(): TextStyle {
-    val new = this::class.constructors.find { it.parameters.isEmpty() }!!.call()
-    val newFun = new::class.declaredMemberFunctions
-    this::class.declaredMemberProperties.forEach {
-        if (!it.name.startsWith("_") && !it.name.startsWith("is")) {
-            val funName = if (it.name == "fontFamilies") "setFontFamilies"
-            else (if (it.name.last() == 's') "add" else "set") + it.name.replaceFirstChar { it.uppercaseChar() }
-            newFun.find { it.name == funName }?.call(new, it.getter.call(this))
-        }
-    }
-    return new
 }

@@ -6,6 +6,7 @@ import top.colter.skiko.data.Edge
 import top.colter.skiko.data.BoxShape
 import top.colter.skiko.data.AxisAlignment
 import top.colter.skiko.data.Border
+import top.colter.skiko.data.VisualOffset
 
 
 /**
@@ -53,7 +54,8 @@ public interface Environment{
  */
 public abstract class Layout(
     public var modifier: Modifier = Modifier(),
-    public var parentLayout: Layout? = null
+    public var parentLayout: Layout? = null,
+    public val fontRegistry: FontRegistry = parentLayout?.fontRegistry ?: Fonts.default,
 ) : Mensurable, Placeable, Drawable, Environment {
 
     // 环境变量
@@ -67,6 +69,13 @@ public abstract class Layout(
     // 解析后的实际边距快照
     internal var resolvedPadding: Edge = modifier.padding
     internal var resolvedMargin: Edge = modifier.margin
+    internal var resolvedBleed: Edge = modifier.bleed
+    internal var resolvedOffset: VisualOffset = modifier.offset
+
+    internal var paintX: Dp = Dp.NULL
+    internal var paintY: Dp = Dp.NULL
+    internal var paintWidth: Dp = Dp.NULL
+    internal var paintHeight: Dp = Dp.NULL
 
     internal val drawFillPaint: Paint = Paint().apply {
         isAntiAlias = true
@@ -90,17 +99,22 @@ public abstract class Layout(
     public val contentHeight: Dp
         get() = if (height.isNotNull() && height - resolvedPadding.vertical > 0.dp) height - resolvedPadding.vertical else 0.dp
 
+    internal val paintContentWidth: Dp
+        get() = if (paintWidth.isNotNull()) (paintWidth - resolvedPadding.horizontal).coerceAtLeast(0.dp) else contentWidth
+    internal val paintContentHeight: Dp
+        get() = if (paintHeight.isNotNull()) (paintHeight - resolvedPadding.vertical).coerceAtLeast(0.dp) else contentHeight
+
     // 元素边界（包括内外边距）
     public val boxWidth: Dp get() = width + resolvedMargin.horizontal
     public val boxHeight: Dp get() = height + resolvedMargin.vertical
 
     protected fun availableParentWidth(): Dp {
-        val parentWidth = parentLayout?.contentWidth ?: Dp.NULL
+        val parentWidth = parentLayout?.paintContentWidth ?: Dp.NULL
         return if (parentWidth.isNotNull()) (parentWidth - resolvedMargin.horizontal).coerceAtLeast(0.dp) else Dp.NULL
     }
 
     protected fun availableParentHeight(): Dp {
-        val parentHeight = parentLayout?.contentHeight ?: Dp.NULL
+        val parentHeight = parentLayout?.paintContentHeight ?: Dp.NULL
         return if (parentHeight.isNotNull()) (parentHeight - resolvedMargin.vertical).coerceAtLeast(0.dp) else Dp.NULL
     }
 
@@ -111,6 +125,7 @@ public abstract class Layout(
     protected fun finishMeasure() {
         width = constrainWidth(width)
         height = constrainHeight(height)
+        resolvePaintSize()
     }
 
     private fun constrainSize(value: Dp, min: Dp, max: Dp, axis: String): Dp {
@@ -133,8 +148,8 @@ public abstract class Layout(
 
         resolveEdges()
 
-        val parentContentWidth = parentLayout?.contentWidth ?: Dp.NULL
-        val parentContentHeight = parentLayout?.contentHeight ?: Dp.NULL
+        val parentContentWidth = parentLayout?.paintContentWidth ?: Dp.NULL
+        val parentContentHeight = parentLayout?.paintContentHeight ?: Dp.NULL
 
         // 由父元素继承宽高且父元素宽高确定
         if (width.isNull() && modifier.fillMaxWidth && parentContentWidth.isNotNull())
@@ -161,14 +176,69 @@ public abstract class Layout(
 
         if (width.isNotNull()) width = constrainWidth(width)
         if (height.isNotNull()) height = constrainHeight(height)
+        resolvePaintSize()
     }
 
     protected fun resolveEdges() {
-        val parentContentWidth = parentLayout?.contentWidth ?: Dp.NULL
-        val parentContentHeight = parentLayout?.contentHeight ?: Dp.NULL
+        val parentContentWidth = parentLayout?.paintContentWidth ?: Dp.NULL
+        val parentContentHeight = parentLayout?.paintContentHeight ?: Dp.NULL
 
         resolvedPadding = modifier.paddingRatio?.resolve(parentContentWidth, parentContentHeight) ?: modifier.padding
         resolvedMargin = modifier.marginRatio?.resolve(parentContentWidth, parentContentHeight) ?: modifier.margin
+        resolvedBleed = modifier.bleedRatio?.resolve(parentContentWidth, parentContentHeight) ?: modifier.bleed
+        resolvedOffset = modifier.offsetRatio?.resolve(parentContentWidth, parentContentHeight) ?: modifier.offset
+    }
+
+    protected fun resolvePaintSize() {
+        val parentContentWidth = parentLayout?.paintContentWidth ?: Dp.NULL
+        val parentContentHeight = parentLayout?.paintContentHeight ?: Dp.NULL
+
+        val baseWidth = when {
+            modifier.overflowRatioWidth != 0f && parentContentWidth.isNotNull() ->
+                parentContentWidth * modifier.overflowRatioWidth
+            width.isNotNull() -> width
+            else -> Dp.NULL
+        }
+        val baseHeight = when {
+            modifier.overflowRatioHeight != 0f && parentContentHeight.isNotNull() ->
+                parentContentHeight * modifier.overflowRatioHeight
+            height.isNotNull() -> height
+            else -> Dp.NULL
+        }
+
+        paintWidth = if (baseWidth.isNotNull()) (baseWidth + resolvedBleed.horizontal).coerceAtLeast(0.dp) else Dp.NULL
+        paintHeight = if (baseHeight.isNotNull()) (baseHeight + resolvedBleed.vertical).coerceAtLeast(0.dp) else Dp.NULL
+    }
+
+    protected fun resolvePaintBounds() {
+        val baseWidth = when {
+            modifier.overflowRatioWidth != 0f && parentLayout?.paintContentWidth?.isNotNull() == true ->
+                parentLayout!!.paintContentWidth * modifier.overflowRatioWidth
+            width.isNotNull() -> width
+            else -> 0.dp
+        }
+        val baseHeight = when {
+            modifier.overflowRatioHeight != 0f && parentLayout?.paintContentHeight?.isNotNull() == true ->
+                parentLayout!!.paintContentHeight * modifier.overflowRatioHeight
+            height.isNotNull() -> height
+            else -> 0.dp
+        }
+
+        val anchorX = when (modifier.overflowHorizontalAnchor) {
+            AxisAlignment.START -> 0.dp
+            AxisAlignment.CENTER -> (width - baseWidth) / 2f
+            AxisAlignment.END -> width - baseWidth
+        }
+        val anchorY = when (modifier.overflowVerticalAnchor) {
+            AxisAlignment.START -> 0.dp
+            AxisAlignment.CENTER -> (height - baseHeight) / 2f
+            AxisAlignment.END -> height - baseHeight
+        }
+
+        paintX = position.x + anchorX - resolvedBleed.left + resolvedOffset.x
+        paintY = position.y + anchorY - resolvedBleed.top + resolvedOffset.y
+        paintWidth = (baseWidth + resolvedBleed.horizontal).coerceAtLeast(0.dp)
+        paintHeight = (baseHeight + resolvedBleed.vertical).coerceAtLeast(0.dp)
     }
 
     /**
@@ -256,10 +326,10 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
     val radius = resolveCornerRadius(border)
 
     val rrect = RRect.makeComplexXYWH(
-        position.x.px,
-        position.y.px,
-        width.px,
-        height.px,
+        paintX.px,
+        paintY.px,
+        paintWidth.px,
+        paintHeight.px,
         radius
     )
 
@@ -326,12 +396,12 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
     }
 
     // 绘制内容
-    if (contentWidth > 0.dp && contentHeight > 0.dp) {
+    if (paintContentWidth > 0.dp && paintContentHeight > 0.dp) {
         val contentRRect = RRect.makeComplexXYWH(
-            position.x.px + resolvedPadding.left.px,
-            position.y.px + resolvedPadding.top.px,
-            contentWidth.px,
-            contentHeight.px,
+            paintX.px + resolvedPadding.left.px,
+            paintY.px + resolvedPadding.top.px,
+            paintContentWidth.px,
+            paintContentHeight.px,
             floatArrayOf(0f, 0f, 0f, 0f)
         )
         canvas.save()
@@ -355,7 +425,7 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
 
 private fun Layout.resolveCornerRadius(border: Border?): FloatArray {
     val radius = drawCornerRadii
-    val maxRadius = if (width.isNotNull() && height.isNotNull()) minOf(width.px, height.px) / 2f else Float.MAX_VALUE
+    val maxRadius = if (paintWidth.isNotNull() && paintHeight.isNotNull()) minOf(paintWidth.px, paintHeight.px) / 2f else Float.MAX_VALUE
 
     fun clamp(value: Float): Float = value.coerceAtLeast(0f).coerceAtMost(maxRadius)
 
@@ -374,12 +444,12 @@ private fun Layout.resolveCornerRadius(border: Border?): FloatArray {
         }
 
         is BoxShape.RelativeRounded -> {
-            val value = clamp(minOf(width.px, height.px) * shape.ratio)
+            val value = clamp(minOf(paintWidth.px, paintHeight.px) * shape.ratio)
             radius.fill(value)
         }
 
         BoxShape.Circle -> {
-            val value = clamp(minOf(width.px, height.px) / 2f)
+            val value = clamp(minOf(paintWidth.px, paintHeight.px) / 2f)
             radius.fill(value)
         }
     }

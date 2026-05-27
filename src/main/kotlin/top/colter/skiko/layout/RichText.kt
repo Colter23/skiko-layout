@@ -2,6 +2,8 @@ package top.colter.skiko.layout
 
 import org.jetbrains.skia.Canvas
 import top.colter.skiko.Dp
+import top.colter.skiko.FontRegistry
+import top.colter.skiko.Fonts
 import top.colter.skiko.Modifier
 import top.colter.skiko.data.LayoutAlignment
 import top.colter.skiko.data.RichParagraph
@@ -47,8 +49,9 @@ public class RichTextLayout(
     public val alignment: LayoutAlignment,
     public val maxLinesCount: Int,
     modifier: Modifier,
-    parentLayout: Layout
-) : Layout(modifier, parentLayout) {
+    parentLayout: Layout?,
+    fontRegistry: FontRegistry = parentLayout?.fontRegistry ?: Fonts.default,
+) : Layout(modifier, parentLayout, fontRegistry) {
 
     private var cachedParagraph: RichParagraph? = null
     private var layoutWidthPx: Float = -1f
@@ -58,7 +61,7 @@ public class RichTextLayout(
         val cached = cachedParagraph
         if (cached != null && layoutWidthPx == safeWidth) return cached
 
-        val result = paragraph.layout(safeWidth, maxLinesCount)
+        val result = paragraph.layout(safeWidth, maxLinesCount, fontRegistry)
         cachedParagraph = result
         layoutWidthPx = safeWidth
         return result
@@ -95,11 +98,12 @@ public class RichTextLayout(
 
     override fun place(bounds: LayoutBounds) {
         position = alignment.place(width, height, resolvedMargin, bounds)
+        resolvePaintBounds()
     }
 
     override fun draw(canvas: Canvas) {
         drawBgBox(canvas) {
-            cachedParagraph?.print(canvas, it.left, it.top)
+            cachedParagraph?.print(canvas, it.left, it.top, fontRegistry)
         }
     }
 }

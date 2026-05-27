@@ -5,7 +5,8 @@ import org.jetbrains.skia.paragraph.Paragraph
 import org.jetbrains.skia.paragraph.ParagraphBuilder
 import org.jetbrains.skia.paragraph.ParagraphStyle
 import org.jetbrains.skia.paragraph.TextStyle
-import top.colter.skiko.FontUtils
+import top.colter.skiko.FontRegistry
+import top.colter.skiko.Fonts
 import java.util.IdentityHashMap
 import kotlin.math.max
 
@@ -40,7 +41,11 @@ public class RichParagraph(
 /**
  * 根据宽度计算换行
  */
-public fun RichParagraph.layout(width: Float, maxLinesCount: Int = Int.MAX_VALUE): RichParagraph {
+public fun RichParagraph.layout(
+    width: Float,
+    maxLinesCount: Int = Int.MAX_VALUE,
+    fontRegistry: FontRegistry = Fonts.default,
+): RichParagraph {
     if (maxLinesCount <= 0) return RichParagraph(defaultStyle, emptyList())
 
     val maxWidth = width.coerceAtLeast(1f)
@@ -49,7 +54,7 @@ public fun RichParagraph.layout(width: Float, maxLinesCount: Int = Int.MAX_VALUE
     val lineCache = IdentityHashMap<TextStyle, MutableMap<String, TextLine>>()
 
     fun styleOf(style: TextStyle?): TextStyle = style ?: defaultStyle
-    fun fontOf(style: TextStyle): Font = fontCache.getOrPut(style) { style.toFont(defaultStyle) }
+    fun fontOf(style: TextStyle): Font = fontCache.getOrPut(style) { style.toFont(defaultStyle, fontRegistry) }
     fun textLine(style: TextStyle, value: String): TextLine {
         val cache = lineCache.getOrPut(style) { HashMap() }
         return cache.getOrPut(value) { TextLine.make(value, fontOf(style)) }
@@ -126,7 +131,7 @@ public fun RichParagraph.layout(width: Float, maxLinesCount: Int = Int.MAX_VALUE
 
                 is RichText.Emoji -> {
                     val style = styleOf(node.style)
-                    val line = node.textLine(style, defaultStyle)
+                    val line = node.textLine(style, defaultStyle, fontRegistry)
                     val spacing = style.letterSpacing
                     val advance = line.width + if (currentWidth > 0f) spacing else 0f
                     if (currentWidth > 0f && currentWidth + advance > maxWidth) {
@@ -153,7 +158,12 @@ public fun RichParagraph.layout(width: Float, maxLinesCount: Int = Int.MAX_VALUE
 /**
  * 绘制
  */
-public fun RichParagraph.print(canvas: Canvas, x: Float, y: Float) {
+public fun RichParagraph.print(
+    canvas: Canvas,
+    x: Float,
+    y: Float,
+    fontRegistry: FontRegistry = Fonts.default,
+) {
     val paragraphStyle = ParagraphStyle()
     var currY = y
 
@@ -163,7 +173,7 @@ public fun RichParagraph.print(canvas: Canvas, x: Float, y: Float) {
             when (node) {
                 is RichText.Text -> {
                     val style = node.style ?: defaultStyle
-                    val paragraph = node.paragraph(style, paragraphStyle)
+                    val paragraph = node.paragraph(style, paragraphStyle, fontRegistry)
                     val cy = currY + if (paragraph.height < line.height) line.height - paragraph.height else 0f
                     paragraph.paint(canvas, currX, cy)
                     currX += paragraph.maxIntrinsicWidth
@@ -171,7 +181,7 @@ public fun RichParagraph.print(canvas: Canvas, x: Float, y: Float) {
 
                 is RichText.Emoji -> {
                     val style = node.style ?: defaultStyle
-                    val emojiLine = node.textLine(style, defaultStyle)
+                    val emojiLine = node.textLine(style, defaultStyle, fontRegistry)
                     val cy = currY + if (emojiLine.height < line.height) line.height - emojiLine.height else 0f
                     val srcRect = Rect.makeXYWH(0f, 0f, node.img.width.toFloat(), node.img.height.toFloat())
                     val tarRect = Rect.makeXYWH(currX, cy, emojiLine.width, emojiLine.height)
@@ -194,44 +204,57 @@ public fun RichParagraph.print(canvas: Canvas, x: Float, y: Float) {
 private const val DEFAULT_FONT_SIZE: Float = 14f
 private const val EMOJI_MEASURE_TEXT: String = "\uD83D\uDE42"
 
-private fun TextStyle.toFont(fallbackStyle: TextStyle? = null): Font {
+private fun TextStyle.toFont(
+    fallbackStyle: TextStyle? = null,
+    fontRegistry: FontRegistry = Fonts.default,
+): Font {
     val size = fontSize.takeIf { it > 0f }
         ?: fallbackStyle?.fontSize?.takeIf { it > 0f }
         ?: DEFAULT_FONT_SIZE
     val typeface = typeface
-        ?: resolveTypeface()
+        ?: resolveTypeface(fontRegistry)
         ?: fallbackStyle?.typeface
-        ?: fallbackStyle?.resolveTypeface()
-        ?: FontUtils.defaultFont
+        ?: fallbackStyle?.resolveTypeface(fontRegistry)
+        ?: fontRegistry.defaultFont
     return Font(typeface, size)
 }
 
-private fun TextStyle.resolveTypeface(): Typeface? {
+private fun TextStyle.resolveTypeface(fontRegistry: FontRegistry = Fonts.default): Typeface? {
     val familyName = fontFamilies.firstOrNull() ?: return null
-    val set = FontUtils.matchFamily(familyName)
+    val set = fontRegistry.matchFamily(familyName)
     return if (set.count() > 0) set.getTypeface(0) else null
 }
 
-private fun RichText.Text.paragraph(style: TextStyle, paragraphStyle: ParagraphStyle): Paragraph {
+private fun RichText.Text.paragraph(
+    style: TextStyle,
+    paragraphStyle: ParagraphStyle,
+    fontRegistry: FontRegistry,
+): Paragraph {
     val cached = drawCacheParagraph
-    if (cached != null && drawCacheStyle === style) return cached
+    if (cached != null && drawCacheStyle === style && drawCacheFontRegistry === fontRegistry) return cached
 
-    val paragraph = ParagraphBuilder(paragraphStyle, FontUtils.fonts)
+    val paragraph = ParagraphBuilder(paragraphStyle, fontRegistry.fonts)
         .pushStyle(style)
         .addText(value)
         .build()
         .layout(10000f)
     drawCacheStyle = style
+    drawCacheFontRegistry = fontRegistry
     drawCacheParagraph = paragraph
     return paragraph
 }
 
-private fun RichText.Emoji.textLine(style: TextStyle, fallbackStyle: TextStyle): TextLine {
+private fun RichText.Emoji.textLine(
+    style: TextStyle,
+    fallbackStyle: TextStyle,
+    fontRegistry: FontRegistry,
+): TextLine {
     val cached = drawCacheLine
-    if (cached != null && drawCacheStyle === style) return cached
+    if (cached != null && drawCacheStyle === style && drawCacheFontRegistry === fontRegistry) return cached
 
-    val line = TextLine.make(EMOJI_MEASURE_TEXT, style.toFont(fallbackStyle))
+    val line = TextLine.make(EMOJI_MEASURE_TEXT, style.toFont(fallbackStyle, fontRegistry))
     drawCacheStyle = style
+    drawCacheFontRegistry = fontRegistry
     drawCacheLine = line
     return line
 }

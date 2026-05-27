@@ -19,8 +19,6 @@ dependencies {
     compileOnly("org.jetbrains.skiko:skiko-awt:$skikoVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 
-    implementation(kotlin("reflect"))
-
     val osName = System.getProperty("os.name")
     val targetOs = when {
         osName == "Mac OS X" -> "macos"

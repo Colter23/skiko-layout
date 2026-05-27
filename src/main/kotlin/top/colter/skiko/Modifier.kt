@@ -24,6 +24,10 @@ import top.colter.skiko.data.*
  * @property margin 外边距
  * @property paddingRatio 比例内边距，按父级内容区解析
  * @property marginRatio 比例外边距，按父级内容区解析
+ * @property overflowRatioWidth 按父级内容区解析的视觉宽度，不参与布局占位
+ * @property overflowRatioHeight 按父级内容区解析的视觉高度，不参与布局占位
+ * @property bleed 视觉外扩，不参与布局占位
+ * @property offset 视觉偏移，不参与布局占位
  * @property background 背景
  * @property border 边框
  * @property shadows 阴影
@@ -50,6 +54,16 @@ public class Modifier(
     public var margin: Edge = Edge(),
     public var paddingRatio: EdgeRatio? = null,
     public var marginRatio: EdgeRatio? = null,
+
+    public var overflowRatioWidth: Float = 0f,
+    public var overflowRatioHeight: Float = 0f,
+    public var overflowHorizontalAnchor: AxisAlignment = AxisAlignment.CENTER,
+    public var overflowVerticalAnchor: AxisAlignment = AxisAlignment.CENTER,
+
+    public var bleed: Edge = Edge(),
+    public var bleedRatio: BleedRatio? = null,
+    public var offset: VisualOffset = VisualOffset(),
+    public var offsetRatio: VisualOffsetRatio? = null,
 
     public var aspectRatio: Float = 0f,
     public var shape: BoxShape = BoxShape.Rectangle,
@@ -275,6 +289,103 @@ public fun Modifier.paddingRatio(edge: Float): Modifier {
     return paddingRatio(EdgeRatio(edge, edge, edge, edge))
 }
 
+/**
+ * 视觉宽度比例
+ *
+ * 按父级内容区解析视觉宽度，只影响绘制和子元素可用区域，不参与布局占位。
+ */
+public fun Modifier.overflowRatioWidth(
+    ratio: Float,
+    anchor: AxisAlignment = AxisAlignment.CENTER
+): Modifier = apply {
+    require(ratio > 0f) { "overflow ratio width require > 0" }
+    this.overflowRatioWidth = ratio
+    this.overflowHorizontalAnchor = anchor
+}
+
+/**
+ * 视觉高度比例
+ *
+ * 按父级内容区解析视觉高度，只影响绘制和子元素可用区域，不参与布局占位。
+ */
+public fun Modifier.overflowRatioHeight(
+    ratio: Float,
+    anchor: AxisAlignment = AxisAlignment.CENTER
+): Modifier = apply {
+    require(ratio > 0f) { "overflow ratio height require > 0" }
+    this.overflowRatioHeight = ratio
+    this.overflowVerticalAnchor = anchor
+}
+
+private fun Edge.requireNonNegative(name: String) {
+    require(top >= 0.dp) { "$name top require >= 0" }
+    require(right >= 0.dp) { "$name right require >= 0" }
+    require(bottom >= 0.dp) { "$name bottom require >= 0" }
+    require(left >= 0.dp) { "$name left require >= 0" }
+}
+
+/**
+ * 视觉外扩
+ *
+ * 正数表示向对应方向额外绘制，不参与布局占位。
+ */
+public fun Modifier.bleed(edge: Edge): Modifier = apply {
+    edge.requireNonNegative("bleed")
+    this.bleed = edge
+    this.bleedRatio = null
+}
+
+/**
+ * 视觉外扩
+ */
+public fun Modifier.bleed(top: Dp = 0.dp, right: Dp = 0.dp, bottom: Dp = 0.dp, left: Dp = 0.dp): Modifier {
+    return bleed(Edge(top, right, bottom, left))
+}
+
+/**
+ * 视觉外扩
+ */
+public fun Modifier.bleed(horizontal: Dp = 0.dp, vertical: Dp = 0.dp): Modifier {
+    return bleed(Edge(vertical, horizontal, vertical, horizontal))
+}
+
+/**
+ * 视觉外扩
+ */
+public fun Modifier.bleed(edge: Dp): Modifier {
+    return bleed(Edge(edge, edge, edge, edge))
+}
+
+/**
+ * 比例视觉外扩
+ *
+ * 按父级内容区解析，正数表示向对应方向额外绘制，不参与布局占位。
+ */
+public fun Modifier.bleedRatio(top: Float = 0f, right: Float = 0f, bottom: Float = 0f, left: Float = 0f): Modifier = apply {
+    this.bleedRatio = BleedRatio(top, right, bottom, left)
+    this.bleed = Edge()
+}
+
+/**
+ * 视觉偏移
+ *
+ * 只移动绘制和子元素可用区域，不参与布局占位。
+ */
+public fun Modifier.offset(x: Dp = 0.dp, y: Dp = 0.dp): Modifier = apply {
+    this.offset = VisualOffset(x, y)
+    this.offsetRatio = null
+}
+
+/**
+ * 比例视觉偏移
+ *
+ * 按父级内容区解析，允许负数，不参与布局占位。
+ */
+public fun Modifier.offsetRatio(x: Float = 0f, y: Float = 0f): Modifier = apply {
+    this.offsetRatio = VisualOffsetRatio(x, y)
+    this.offset = VisualOffset()
+}
+
 
 /**
  * 填充最大宽高
@@ -449,6 +560,15 @@ public fun Modifier.merge(modifier: Modifier) {
     if (modifier.fillHeight) fillHeight = true
     if (modifier.fillMaxHeight) fillMaxHeight = true
 
+    if (modifier.overflowRatioWidth != 0f) {
+        overflowRatioWidth = modifier.overflowRatioWidth
+        overflowHorizontalAnchor = modifier.overflowHorizontalAnchor
+    }
+    if (modifier.overflowRatioHeight != 0f) {
+        overflowRatioHeight = modifier.overflowRatioHeight
+        overflowVerticalAnchor = modifier.overflowVerticalAnchor
+    }
+
     if (modifier.paddingRatio != null) {
         paddingRatio = modifier.paddingRatio
         padding = Edge()
@@ -462,6 +582,20 @@ public fun Modifier.merge(modifier: Modifier) {
     } else if (modifier.margin.isNotEmpty()) {
         margin = modifier.margin
         marginRatio = null
+    }
+    if (modifier.bleedRatio != null) {
+        bleedRatio = modifier.bleedRatio
+        bleed = Edge()
+    } else if (modifier.bleed.isNotEmpty()) {
+        bleed = modifier.bleed
+        bleedRatio = null
+    }
+    if (modifier.offsetRatio != null) {
+        offsetRatio = modifier.offsetRatio
+        offset = VisualOffset()
+    } else if (modifier.offset.isNotEmpty()) {
+        offset = modifier.offset
+        offsetRatio = null
     }
     if (modifier.aspectRatio != 0f) aspectRatio = modifier.aspectRatio
     if (modifier.shape != BoxShape.Rectangle) shape = modifier.shape

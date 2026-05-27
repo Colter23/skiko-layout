@@ -35,8 +35,9 @@ public inline fun Layout.Box(
 public class BoxLayout(
     public val alignment: LayoutAlignment,
     modifier: Modifier,
-    parentLayout: Layout?
-) : Layout(modifier, parentLayout) {
+    parentLayout: Layout?,
+    fontRegistry: FontRegistry = parentLayout?.fontRegistry ?: Fonts.default,
+) : Layout(modifier, parentLayout, fontRegistry) {
 
     override fun measure(deep: Boolean) {
         // 第一遍计算宽高
@@ -58,16 +59,17 @@ public class BoxLayout(
     override fun place(bounds: LayoutBounds) {
         // 确定当前元素位置
         position = alignment.place(width, height, resolvedMargin, bounds)
+        resolvePaintBounds()
 
         // 确定子元素位置
         for (layout in child) {
             layout.place(
                 // 指定子元素最大边界
                 LayoutBounds.makeXYWH(
-                    left = position.x + resolvedPadding.left,
-                    top = position.y + resolvedPadding.top,
-                    width = contentWidth,
-                    height = contentHeight
+                    left = paintX + resolvedPadding.left,
+                    top = paintY + resolvedPadding.top,
+                    width = paintContentWidth,
+                    height = paintContentHeight
                 )
             )
         }

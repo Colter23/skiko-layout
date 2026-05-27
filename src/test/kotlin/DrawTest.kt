@@ -57,6 +57,9 @@ internal class DrawTest {
     }
 
     private fun alphaOf(argb: Int): Int = argb ushr 24 and 0xFF
+    private fun redOf(argb: Int): Int = argb ushr 16 and 0xFF
+    private fun greenOf(argb: Int): Int = argb ushr 8 and 0xFF
+    private fun blueOf(argb: Int): Int = argb and 0xFF
 
     @BeforeAll
     fun init() {
@@ -91,6 +94,64 @@ internal class DrawTest {
 
         assertEquals(24f, padded.width.px - plain.width.px, 0.01f)
         assertEquals(24f, padded.height.px - plain.height.px, 0.01f)
+    }
+
+    @Test
+    fun `regression row column text respects allocated width`() {
+        val cover = Surface.makeRasterN32Premul(200, 200).apply {
+            canvas.clear(Color.RED)
+        }.makeImageSnapshot()
+
+        val title = "A very long title that should wrap inside the allocated column width and never grow beyond it"
+        val desc = "This description is also long enough to wrap several lines instead of forcing the column wider than the row"
+
+        val root = measureRoot(
+            Modifier().width(600.dp).height(200.dp)
+        ) {
+            Row(
+                modifier = Modifier()
+                    .height(200.dp)
+                    .fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier().fillMaxHeight()
+                ) {
+                    Image(
+                        image = cover,
+                        ratio = 1f,
+                        modifier = Modifier().fillMaxHeight()
+                    )
+                }
+
+                Column(modifier = Modifier().fillWidth().fillMaxHeight().margin(15.dp)) {
+                    Text(
+                        text = title,
+                        maxLinesCount = 2,
+                        modifier = Modifier().fillRatioHeight(0.4f)
+                    )
+
+                    Text(
+                        text = desc,
+                        maxLinesCount = 4,
+                        modifier = Modifier().fillRatioHeight(0.6f)
+                    )
+                }
+            }
+        }
+
+        val row = root.child.single() as RowLayout
+        val imageBox = row.child[0] as BoxLayout
+        val column = row.child[1] as ColumnLayout
+        val firstText = column.child[0] as TextLayout
+        val secondText = column.child[1] as TextLayout
+
+        assertEquals(200f, imageBox.width.px, 0.01f)
+        assertEquals(370f, column.width.px, 0.01f)
+        assertEquals(370f, column.contentWidth.px, 0.01f)
+        assertTrue(firstText.width.px <= column.contentWidth.px + 0.01f)
+        assertTrue(secondText.width.px <= column.contentWidth.px + 0.01f)
+        assertTrue(firstText.height.px <= 80f + 0.01f)
+        assertTrue(secondText.height.px <= 120f + 0.01f)
     }
 
     @Test
@@ -270,6 +331,180 @@ internal class DrawTest {
         assertEquals(20f, first.position.y.px, 0.01f)
         assertEquals(132f, first.boxWidth.px, 0.01f)
         assertEquals(140f, first.boxHeight.px, 0.01f)
+    }
+
+    @Test
+    fun `regression overflow ratio keeps layout slot`() {
+        val root = measureRoot(
+            Modifier().width(500.dp).height(180.dp)
+        ) {
+            Row(Modifier().fillMaxWidth().height(100.dp)) {
+                Box(Modifier().width(200.dp).fillMaxHeight()) {
+                    Box(
+                        Modifier()
+                            .fillMaxWidth()
+                            .fillMaxHeight()
+                            .overflowRatioWidth(1.5f)
+                            .background(Color.RED)
+                    )
+                }
+                Box(Modifier().width(50.dp).height(100.dp).background(Color.BLUE))
+            }
+        }
+
+        val row = root.child.single() as RowLayout
+        val overflowSlot = row.child[0] as BoxLayout
+        val sibling = row.child[1] as BoxLayout
+
+        assertEquals(200f, overflowSlot.width.px, 0.01f)
+        assertEquals(200f, overflowSlot.boxWidth.px, 0.01f)
+        assertEquals(200f, sibling.position.x.px, 0.01f)
+
+        val image = renderRoot(root)
+        val overflowPixel = image.getRGB(10, 50)
+        assertEquals(255, alphaOf(overflowPixel))
+        assertTrue(redOf(overflowPixel) > 200)
+
+        val siblingPixel = image.getRGB(225, 50)
+        assertEquals(255, alphaOf(siblingPixel))
+        assertTrue(blueOf(siblingPixel) > 200)
+    }
+
+    @Test
+    fun `regression bleed ratio paints outside without occupying space`() {
+        val root = measureRoot(
+            Modifier().width(360.dp).height(180.dp)
+        ) {
+            Box(Modifier().width(200.dp).height(100.dp).margin(left = 120.dp, top = 40.dp)) {
+                Box(
+                    Modifier()
+                        .width(100.dp)
+                        .height(40.dp)
+                        .bleedRatio(left = 0.2f, right = 0.1f)
+                        .background(Color.GREEN)
+                )
+            }
+        }
+
+        val parent = root.child.single() as BoxLayout
+        val child = parent.child.single() as BoxLayout
+        assertEquals(100f, child.width.px, 0.01f)
+        assertEquals(100f, child.boxWidth.px, 0.01f)
+
+        val image = renderRoot(root)
+        val bleedPixel = image.getRGB(90, 60)
+        assertEquals(255, alphaOf(bleedPixel))
+        assertTrue(greenOf(bleedPixel) > 200)
+        assertEquals(0, alphaOf(image.getRGB(75, 60)))
+    }
+
+    @Test
+    fun `regression offset ratio moves paint only`() {
+        val root = measureRoot(
+            Modifier().width(360.dp).height(180.dp)
+        ) {
+            Box(Modifier().width(300.dp).height(100.dp).margin(left = 40.dp, top = 40.dp)) {
+                Box(
+                    Modifier()
+                        .width(100.dp)
+                        .height(40.dp)
+                        .offsetRatio(x = -0.1f)
+                        .background(Color.RED)
+                )
+            }
+        }
+
+        val parent = root.child.single() as BoxLayout
+        val child = parent.child.single() as BoxLayout
+        assertEquals(40f, child.position.x.px, 0.01f)
+        assertEquals(100f, child.width.px, 0.01f)
+
+        val image = renderRoot(root)
+        val offsetPixel = image.getRGB(15, 60)
+        assertEquals(255, alphaOf(offsetPixel))
+        assertTrue(redOf(offsetPixel) > 200)
+        assertEquals(0, alphaOf(image.getRGB(145, 60)))
+    }
+
+    @Test
+    fun `regression overflow content bounds feed nested fill`() {
+        val root = measureRoot(
+            Modifier().width(500.dp).height(180.dp)
+        ) {
+            Box(Modifier().width(300.dp).height(100.dp).margin(left = 100.dp, top = 40.dp)) {
+                Box(
+                    Modifier()
+                        .fillMaxWidth()
+                        .fillMaxHeight()
+                        .overflowRatioWidth(1.2f)
+                        .padding(10.dp)
+                        .background(Color.RED)
+                ) {
+                    Box(Modifier().fillMaxWidth().fillMaxHeight().background(Color.BLUE))
+                }
+            }
+        }
+
+        val parent = root.child.single() as BoxLayout
+        val overflow = parent.child.single() as BoxLayout
+        val nested = overflow.child.single() as BoxLayout
+
+        assertEquals(300f, overflow.width.px, 0.01f)
+        assertEquals(340f, nested.width.px, 0.01f)
+        assertEquals(80f, nested.position.x.px, 0.01f)
+    }
+
+    @Test
+    fun `regression bleed does not expand auto parent`() {
+        val root = measureRoot(
+            Modifier().width(300.dp).height(120.dp)
+        ) {
+            Box {
+                Box(
+                    Modifier()
+                        .width(100.dp)
+                        .height(50.dp)
+                        .bleed(50.dp)
+                        .background(Color.RED)
+                )
+            }
+        }
+
+        val autoParent = root.child.single() as BoxLayout
+        val child = autoParent.child.single() as BoxLayout
+        assertEquals(100f, autoParent.width.px, 0.01f)
+        assertEquals(50f, autoParent.height.px, 0.01f)
+        assertEquals(100f, child.boxWidth.px, 0.01f)
+
+        val image = renderRoot(root)
+        val bleedPixel = image.getRGB(125, 25)
+        assertEquals(255, alphaOf(bleedPixel))
+        assertTrue(redOf(bleedPixel) > 200)
+    }
+
+    @Test
+    fun `regression grid item modifier keeps visual overflow`() {
+        val root = measureRoot(
+            Modifier().width(160.dp).height(100.dp)
+        ) {
+            Grid(
+                maxLineCount = 1,
+                lockRatio = false,
+                itemModifier = Modifier().bleed(10.dp)
+            ) {
+                Box(Modifier().width(40.dp).height(40.dp).background(Color.RED))
+            }
+        }
+
+        val grid = root.child.single() as GridLayout
+        val item = grid.child.single() as BoxLayout
+        assertEquals(40f, grid.width.px, 0.01f)
+        assertEquals(40f, item.boxWidth.px, 0.01f)
+
+        val image = renderRoot(root)
+        val bleedPixel = image.getRGB(45, 20)
+        assertEquals(255, alphaOf(bleedPixel))
+        assertTrue(redOf(bleedPixel) > 200)
     }
 
     @Test

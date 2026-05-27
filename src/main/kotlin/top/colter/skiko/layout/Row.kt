@@ -35,8 +35,37 @@ public inline fun Layout.Row(
 public class RowLayout(
     public val alignment: LayoutAlignment,
     modifier: Modifier,
-    parentLayout: Layout?
-) : Layout(modifier, parentLayout) {
+    parentLayout: Layout?,
+    fontRegistry: FontRegistry = parentLayout?.fontRegistry ?: Fonts.default,
+) : Layout(modifier, parentLayout, fontRegistry) {
+
+    private fun measureChildren(deep: Boolean) {
+        if (!deep) return
+
+        if (width.isNull()) {
+            child.forEach { it.measure(true) }
+            return
+        }
+
+        child.forEach { it.preMeasure() }
+
+        val fillChildren = child.filter { it.modifier.fillWidth }
+        val fixedChildren = child.filter { !it.modifier.fillWidth }
+
+        fixedChildren.forEach { it.measure(true) }
+
+        fillChildren.ifNotEmpty {
+            val fixedWidth = fixedChildren.sumWidth()
+            val fillMargin = sumOf { resolvedMargin.horizontal }
+            val remainingWidth = (paintContentWidth - fixedWidth - fillMargin).coerceAtLeast(0.dp)
+            val itemWidth = remainingWidth / size
+
+            forEach {
+                it.width = itemWidth
+                it.measure(true)
+            }
+        }
+    }
 
     override fun measure(deep: Boolean) {
         // 第一遍计算宽高
@@ -44,20 +73,7 @@ public class RowLayout(
 
         if (child.isNotEmpty()) {
             // 重新计算子元素宽高
-            if (deep) child.forEach { it.measure(true) }
-
-            // 指定子元素宽度
-            if (width.isNotNull()) {
-                val sw = contentWidth - child.sumWidth()
-                if (sw > 0.dp) {
-                    child.filter { it.modifier.fillWidth }.ifNotEmpty {
-                        forEach {
-                            it.width = sw / size
-                            it.measure(true)
-                        }
-                    }
-                }
-            }
+            measureChildren(deep)
 
             // 由子元素确定当前元素宽高
             if (width.isNull()) width = child.sumWidth() + resolvedPadding.horizontal
@@ -69,6 +85,7 @@ public class RowLayout(
     override fun place(bounds: LayoutBounds) {
         // 确定当前元素位置
         position = alignment.place(width, height, resolvedMargin, bounds)
+        resolvePaintBounds()
 
         var x = 0.dp
         // 确定子元素位置
@@ -76,10 +93,10 @@ public class RowLayout(
             layout.place(
                 // 指定子元素最大边界
                 LayoutBounds.makeXYWH(
-                    left = position.x + resolvedPadding.left + x,
-                    top = position.y + resolvedPadding.top,
+                    left = paintX + resolvedPadding.left + x,
+                    top = paintY + resolvedPadding.top,
                     width = layout.boxWidth,
-                    height = contentHeight
+                    height = paintContentHeight
                 )
             )
             x += layout.boxWidth

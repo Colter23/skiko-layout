@@ -40,8 +40,9 @@ public class ImageLayout(
     public val ratio: Float,
     public val alignment: LayoutAlignment,
     modifier: Modifier,
-    parentLayout: Layout
-) : Layout(modifier, parentLayout) {
+    parentLayout: Layout?,
+    fontRegistry: FontRegistry = parentLayout?.fontRegistry ?: Fonts.default,
+) : Layout(modifier, parentLayout, fontRegistry) {
 
     private fun naturalRatio(): Float = if (ratio != 0f) ratio else image.width.toFloat() / image.height.toFloat()
 
@@ -169,6 +170,7 @@ public class ImageLayout(
 
     override fun place(bounds: LayoutBounds) {
         position = alignment.place(width, height, resolvedMargin, bounds)
+        resolvePaintBounds()
     }
 
     override fun draw(canvas: Canvas) {

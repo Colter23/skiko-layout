@@ -26,7 +26,7 @@ public fun Layout.Text(
     text: String,
     color: Int = Color.BLACK,
     fontSize: Dp = 18.dp,
-    fontFamily: String = "Source Han Sans",
+    fontFamily: String = "",
     fontStyle: FontStyle = FontStyle.NORMAL,
     maxLinesCount: Int = 1,
     alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
@@ -38,9 +38,9 @@ public fun Layout.Text(
         textStyle = TextStyle().apply {
             this.color = color
             this.fontSize = fontSize.px
-            this.fontFamilies = arrayOf(fontFamily)
+            if (fontFamily.isNotBlank()) this.fontFamilies = arrayOf(fontFamily)
             this.fontStyle = fontStyle
-        },
+        }.withDefaultFontFamily(fontRegistry),
         alignment = alignment,
         intrinsicAlignment = intrinsicAlignment,
         maxLinesCount = maxLinesCount,
@@ -66,9 +66,9 @@ public fun Layout.Text(
     modifier: Modifier = Modifier()
 ) {
     if (textStyle.typeface != null) {
-        val fonts = FontUtils.fonts.findTypefaces(arrayOf(textStyle.typeface!!.familyName), FontStyle.NORMAL)
+        val fonts = fontRegistry.fonts.findTypefaces(arrayOf(textStyle.typeface!!.familyName), FontStyle.NORMAL)
         if (fonts.isEmpty()) {
-            FontUtils.loadTypeface(textStyle.typeface!!)
+            fontRegistry.loadTypeface(textStyle.typeface!!)
         }
     }
 
@@ -93,8 +93,9 @@ public class TextLayout(
     public val intrinsicAlignment: LayoutAlignment,
     public val maxLinesCount: Int,
     modifier: Modifier,
-    parentLayout: Layout
-) : Layout(modifier, parentLayout) {
+    parentLayout: Layout?,
+    fontRegistry: FontRegistry = parentLayout?.fontRegistry ?: Fonts.default,
+) : Layout(modifier, parentLayout, fontRegistry) {
 
     private val paragraphStyle = ParagraphStyle().apply {
         maxLinesCount = this@TextLayout.maxLinesCount
@@ -111,7 +112,7 @@ public class TextLayout(
         val cached = cachedParagraph
         if (cached != null && layoutWidthPx == safeWidth) return cached
 
-        val paragraph = ParagraphBuilder(paragraphStyle, FontUtils.fonts)
+        val paragraph = ParagraphBuilder(paragraphStyle, fontRegistry.fonts)
             .addText(text)
             .build()
             .layout(safeWidth)
@@ -151,6 +152,7 @@ public class TextLayout(
 
     override fun place(bounds: LayoutBounds) {
         position = alignment.place(width, height, resolvedMargin, bounds)
+        resolvePaintBounds()
     }
 
     override fun draw(canvas: Canvas) {
