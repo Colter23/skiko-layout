@@ -77,6 +77,12 @@ public class GridLayout(
         return child.maxOf { if (width > height) width else height }
     }
 
+    private fun Layout.resetMeasuredSize() {
+        width = Dp.NULL
+        height = Dp.NULL
+        child.forEach { it.resetMeasuredSize() }
+    }
+
     private fun lockedItemSize(): Dp? {
         if (!lockRatio || child.isEmpty()) return null
 
@@ -112,14 +118,17 @@ public class GridLayout(
         }
 
         if (deep) {
+            if (lockRatio) {
+                child.forEach { it.resetMeasuredSize() }
+            }
             child.forEach { it.measure(true) }
         }
 
         lockedItemSize()?.takeIf { it.isNotNull() && it > 0.dp }?.let { itemSize ->
             child.forEach {
+                it.resetMeasuredSize()
                 it.width = itemSize
                 it.height = itemSize
-                it.modifier.width(itemSize).height(itemSize)
                 it.measure(true)
             }
         }

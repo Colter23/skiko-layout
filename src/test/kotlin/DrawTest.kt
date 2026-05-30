@@ -212,6 +212,39 @@ internal class DrawTest {
     }
 
     @Test
+    fun `regression grid locked item remeasures nested content`() {
+        val image = Surface.makeRasterN32Premul(1000, 800).makeImageSnapshot()
+
+        val root = measureRoot(
+            Modifier().width(1000.dp).height(700.dp)
+        ) {
+            Grid(
+                maxLineCount = 2,
+                space = 20.dp,
+                lockRatio = true,
+                modifier = Modifier().fillMaxWidth()
+            ) {
+                repeat(2) {
+                    Box(Modifier().background(Color.RED)) {
+                        Image(image = image, ratio = Ratio.SQUARE)
+                    }
+                }
+            }
+        }
+
+        val grid = root.child.single() as GridLayout
+        val firstTile = grid.child[0] as BoxLayout
+        val firstImage = firstTile.child.single() as ImageLayout
+        val secondTile = grid.child[1] as BoxLayout
+
+        assertEquals(490f, firstTile.width.px, 0.01f)
+        assertEquals(490f, firstTile.height.px, 0.01f)
+        assertEquals(490f, firstImage.width.px, 0.01f)
+        assertEquals(490f, firstImage.height.px, 0.01f)
+        assertTrue((secondTile.position.x + secondTile.boxWidth).px <= (grid.position.x + grid.contentWidth).px + 0.01f)
+    }
+
+    @Test
     fun `regression image ratio with max constraints`() {
         val image = Surface.makeRasterN32Premul(400, 200).makeImageSnapshot()
 
