@@ -38,23 +38,36 @@ public class FontRegistry {
     /** Skia Paragraph 使用的字体集合，包含自定义字体与系统默认字体管理器。 */
     public val fonts: FontCollection = FontCollection()
         .setAssetFontManager(fontProvider)
-        .setDynamicFontManager(fontProvider)
+        .setDynamicFontManager(fontMgr)
         .setDefaultFontManager(fontMgr)
 
     /** 默认正文字体。Text 未指定字体族时会优先使用它。 */
     public var defaultFont: Typeface? = null
+        set(value) {
+            field = value
+            updateDefaultFontManager()
+        }
     /** 默认 Emoji 字体。主要供业务层或富文本样式显式引用。 */
     public var emojiFont: Typeface? = null
 
     /** 注册字体；首次注册的普通字体会成为默认正文字体。 */
     private fun registerTypeface(typeface: Typeface?, alias: String? = null) {
         if (typeface == null) return
-        if (defaultFont == null) defaultFont = typeface
         fontProvider.registerTypeface(typeface)
         typeface.familyName.takeIf { it.isNotBlank() }?.let {
             fontProvider.registerTypeface(typeface, it)
         }
         if (!alias.isNullOrBlank()) fontProvider.registerTypeface(typeface, alias)
+        if (defaultFont == null) defaultFont = typeface
+    }
+
+    private fun updateDefaultFontManager() {
+        val defaultFamily = defaultFont?.familyName
+        if (defaultFamily.isNullOrBlank()) {
+            fonts.setDefaultFontManager(fontMgr)
+        } else {
+            fonts.setDefaultFontManager(fontProvider, defaultFamily)
+        }
     }
 
     /** 先从当前 registry 的自定义字体里查找，找不到再交给系统字体管理器。 */

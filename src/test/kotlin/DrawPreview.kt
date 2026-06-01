@@ -454,7 +454,7 @@ private fun generateBackgroundImage() {
                 .fillMaxWidth()
                 .height(500.dp)
 //                    .background(color = Color.BLACK.withAlpha(0.3f), image = bg1)
-                .background(gradient = Gradient(LayoutAlignment.LEFT_TOP, LayoutAlignment.RIGHT_BOTTOM, listOf(Color.BLACK.withAlpha(1f), Color.BLACK.withAlpha(0f))), image = bg1)
+                .background(gradient = top.colter.skiko.data.Gradient(LayoutAlignment.LEFT_TOP, LayoutAlignment.RIGHT_BOTTOM, listOf(Color.BLACK.withAlpha(1f), Color.BLACK.withAlpha(0f))), image = bg1)
                 .border(2.dp, 10.dp)
         ) { }
     }

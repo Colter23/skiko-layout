@@ -1,5 +1,7 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
-    kotlin("jvm") version "2.0.21"
+    kotlin("jvm") version "2.3.21"
     id("maven-publish")
     id("signing")
 }
@@ -14,7 +16,7 @@ repositories {
 }
 
 dependencies {
-    val skikoVersion = "0.8.23"
+    val skikoVersion = "0.148.1"
 
     compileOnly("org.jetbrains.skiko:skiko-awt:$skikoVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
@@ -51,10 +53,9 @@ java {
 
 kotlin {
     explicitApi()
-    target.compilations.all {
-        kotlinOptions.jvmTarget = "11"
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
     }
-
 }
 
 val ver = version.toString()

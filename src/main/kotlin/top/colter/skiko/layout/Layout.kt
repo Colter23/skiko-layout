@@ -376,11 +376,18 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
             }
             canvas.drawRRect(rrect, drawGradientPaint.apply {
                 shader = Shader.makeLinearGradient(
-                    x0 = x0,
-                    y0 = y0,
-                    x1 = x1,
-                    y1 = y1,
-                    colors = bg.gradient.colors.toIntArray(),
+                    x0,
+                    y0,
+                    x1,
+                    y1,
+                    Gradient(
+                        Gradient.Colors(
+                            colors = bg.gradient.colors.map { Color4f(it) }.toTypedArray(),
+                            positions = null,
+                            tileMode = FilterTileMode.CLAMP,
+                            colorSpace = ColorSpace.sRGB,
+                        )
+                    ),
                 )
             })
         }
