@@ -65,17 +65,18 @@ public fun Layout.Text(
     intrinsicAlignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     modifier: Modifier = Modifier()
 ) {
-    if (textStyle.typeface != null) {
-        val fonts = fontRegistry.fonts.findTypefaces(arrayOf(textStyle.typeface!!.familyName), FontStyle.NORMAL)
+    val resolvedTextStyle = textStyle.withDefaultFontFamily(fontRegistry)
+    if (resolvedTextStyle.typeface != null) {
+        val fonts = fontRegistry.fonts.findTypefaces(arrayOf(resolvedTextStyle.typeface!!.familyName), FontStyle.NORMAL)
         if (fonts.isEmpty()) {
-            fontRegistry.loadTypeface(textStyle.typeface!!)
+            fontRegistry.loadTypeface(resolvedTextStyle.typeface!!)
         }
     }
 
     Layout(
         layout = TextLayout(
             text = text,
-            textStyle = textStyle,
+            textStyle = resolvedTextStyle,
             alignment = alignment,
             intrinsicAlignment = intrinsicAlignment,
             maxLinesCount = maxLinesCount,

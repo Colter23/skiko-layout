@@ -37,6 +37,7 @@ public class FontRegistry {
 
     /** Skia Paragraph 使用的字体集合，包含自定义字体与系统默认字体管理器。 */
     public val fonts: FontCollection = FontCollection()
+        .setAssetFontManager(fontProvider)
         .setDynamicFontManager(fontProvider)
         .setDefaultFontManager(fontMgr)
 
@@ -50,6 +51,9 @@ public class FontRegistry {
         if (typeface == null) return
         if (defaultFont == null) defaultFont = typeface
         fontProvider.registerTypeface(typeface)
+        typeface.familyName.takeIf { it.isNotBlank() }?.let {
+            fontProvider.registerTypeface(typeface, it)
+        }
         if (!alias.isNullOrBlank()) fontProvider.registerTypeface(typeface, alias)
     }
 
@@ -268,7 +272,10 @@ public object FontUtils {
 /** 当前样式没有指定字体族时，填入给定字体上下文的默认正文字体。 */
 public fun TextStyle.withDefaultFontFamily(fontRegistry: FontRegistry = Fonts.default): TextStyle = apply {
     if (fontFamilies.isEmpty()) {
-        fontRegistry.defaultFont?.familyName?.let { fontFamilies = arrayOf(it) }
+        fontRegistry.defaultFont?.let {
+            fontFamilies = arrayOf(it.familyName)
+            setTypeface(it)
+        }
     }
 }
 
