@@ -40,9 +40,9 @@ private fun loadPreviewAllImages(path: String): Map<String, Image> {
 private fun initPreview() {
     Dp.factor = 1f
 
-    FontUtils.loadTypeface(loadPreviewResource("font", "LXGWWenKai-Bold.ttf").absolutePath)
-//    FontUtils.loadEmojiTypeface(loadPreviewResource("font", "Seguiemj.ttf").absolutePath)
-    FontUtils.loadEmojiTypeface(loadPreviewResource("font", "NotoColorEmoji.ttf").absolutePath)
+    Fonts.default.loadTextTypeface(loadPreviewResource("font", "LXGWWenKai-Bold.ttf").absolutePath)
+//    Fonts.default.loadEmojiTypeface(loadPreviewResource("font", "Seguiemj.ttf").absolutePath)
+    Fonts.default.loadEmojiTypeface(loadPreviewResource("font", "NotoColorEmoji.ttf").absolutePath)
 }
 
 fun main() {
@@ -60,12 +60,12 @@ fun main() {
 }
 
 private fun generateParagraph() {
-    val textStyle = TextStyle().setColor(Color.WHITE).setFontSize(30f).setFontFamily(FontUtils.defaultFont!!.familyName)
+    val textStyle = TextStyle().setColor(Color.WHITE).setFontSize(30f).setFontFamily(Fonts.default.textTypeface!!.familyName)
     val style = ParagraphStyle()
-    val builder = ParagraphBuilder(style, FontUtils.fonts)
-        .pushStyle(textStyle.setFontFamily(FontUtils.emojiFont!!.familyName))
+    val builder = ParagraphBuilder(style, Fonts.default.fonts)
+        .pushStyle(textStyle.setFontFamily(Fonts.default.emojiTypeface!!.familyName))
         .addText("❤️😍")
-        .pushStyle(textStyle.setColor(Color.GREEN).setFontSize(20f).setFontFamily(FontUtils.defaultFont!!.familyName))
+        .pushStyle(textStyle.setColor(Color.GREEN).setFontSize(20f).setFontFamily(Fonts.default.textTypeface!!.familyName))
         .addText("Hello")
         .pushStyle(textStyle.setColor(Color.RED).setFontSize(30f))
         .addText(" World")
@@ -328,7 +328,7 @@ private fun Layout.richParagraphPreview(modifier: Modifier) {
         return currEmoji
     }
 
-    val style = TextStyle().setColor(Color.BLACK).setFontSize(30.px).setFontFamily(FontUtils.defaultFont!!.familyName)
+    val style = TextStyle().setColor(Color.BLACK).setFontSize(30.px).setFontFamily(Fonts.default.textTypeface!!.familyName)
     val paragraph = RichParagraphBuilder(style)
         .addText("文字混排测试")
         .addText("自定义文字样式", style.setColor(Color.RED).setFontSize(40.px))
@@ -350,7 +350,7 @@ private fun Layout.richParagraphPreview(modifier: Modifier) {
         .addText("测试emoji自定义样式")
         .wrap()
         .addText("字体emoji")
-        .addText("😍❤️🤣😁🙌", style.setFontSize(40.px).setFontFamily(FontUtils.emojiFont!!.familyName))
+        .addText("😍❤️🤣😁🙌", style.setFontSize(40.px).setFontFamily(Fonts.default.emojiTypeface!!.familyName))
         .build()
 
     Box(modifier) {

@@ -65,8 +65,8 @@ internal class DrawTest {
     fun init() {
         Dp.factor = 1f
 
-        FontUtils.loadTypeface(loadTestResource("font", "LXGWWenKai-Bold.ttf").absolutePath)
-        FontUtils.loadEmojiTypeface(loadTestResource("font", "NotoColorEmoji.ttf").absolutePath)
+        Fonts.default.loadTextTypeface(loadTestResource("font", "LXGWWenKai-Bold.ttf").absolutePath)
+        Fonts.default.loadEmojiTypeface(loadTestResource("font", "NotoColorEmoji.ttf").absolutePath)
     }
 
     @Test
@@ -159,7 +159,7 @@ internal class DrawTest {
         val style = TextStyle()
             .setColor(Color.BLACK)
             .setFontSize(24f)
-            .setFontFamily(FontUtils.defaultFont!!.familyName)
+            .setFontFamily(Fonts.default.textTypeface!!.familyName)
 
         val paragraph = RichParagraphBuilder(style)
             .addText("Rich line one")
@@ -646,7 +646,7 @@ internal class DrawTest {
         val richStyle = TextStyle()
             .setColor(Color.BLACK)
             .setFontSize(18f)
-            .setFontFamily(FontUtils.defaultFont!!.familyName)
+            .setFontFamily(Fonts.default.textTypeface!!.familyName)
 
         val richParagraph = RichParagraphBuilder(richStyle)
             .addText("Rich smoke ".repeat(40))

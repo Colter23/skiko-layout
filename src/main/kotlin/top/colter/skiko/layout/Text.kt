@@ -40,7 +40,7 @@ public fun Layout.Text(
             this.fontSize = fontSize.px
             if (fontFamily.isNotBlank()) this.fontFamilies = arrayOf(fontFamily)
             this.fontStyle = fontStyle
-        }.withDefaultFontFamily(fontRegistry),
+        },
         alignment = alignment,
         intrinsicAlignment = intrinsicAlignment,
         maxLinesCount = maxLinesCount,
@@ -65,13 +65,7 @@ public fun Layout.Text(
     intrinsicAlignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     modifier: Modifier = Modifier()
 ) {
-    val resolvedTextStyle = textStyle.withDefaultFontFamily(fontRegistry)
-    if (resolvedTextStyle.typeface != null) {
-        val fonts = fontRegistry.fonts.findTypefaces(arrayOf(resolvedTextStyle.typeface!!.familyName), FontStyle.NORMAL)
-        if (fonts.isEmpty()) {
-            fontRegistry.loadTypeface(resolvedTextStyle.typeface!!)
-        }
-    }
+    val resolvedTextStyle = fontRegistry.resolveTextStyle(textStyle)
 
     Layout(
         layout = TextLayout(

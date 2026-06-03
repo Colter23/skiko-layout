@@ -29,7 +29,7 @@ import top.colter.skiko.copyStyle
  *             .addText("自定义文字样式", style.setColor(Color.RED))
  *             .wrap()
  *             .addEmoji("[emoji]", emojiImg)
- *             .addText("😍❤️", style.setFontFamily(emojiFont))
+ *             .addText("😍❤️", style.setFontFamily(Fonts.default.emojiTypeface!!.familyName))
  *             .build()
  * ```
  *
