@@ -16,6 +16,11 @@ public val emojiRegex: Regex = "$emojiCharacter(?:\\u200D$emojiCharacter)*".toRe
 
 private val defaultImageFilterMipmap = FilterMipmap(FilterMode.LINEAR, MipmapMode.NEAREST)
 
+internal fun imageAlphaPaint(alpha: Float): Paint? {
+    require(alpha in 0f..1f) { "图片透明度需在 0..1 之间" }
+    return if (alpha == 1f) null else Paint().setAlphaf(alpha)
+}
+
 
 public fun List<Layout>.sumWidth(): Dp = sumOf { boxWidth }
 public fun List<Layout>.sumHeight(): Dp = sumOf { boxHeight }

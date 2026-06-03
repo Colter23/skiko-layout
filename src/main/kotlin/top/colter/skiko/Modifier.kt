@@ -463,8 +463,13 @@ public fun Modifier.background(background: Background): Modifier = apply { this.
  * @param gradient 渐变色
  * @param image 图片
  */
-public fun Modifier.background(color: Int? = null, gradient: Gradient? = null, image: Image? = null): Modifier {
-    return background(Background(color, gradient, image))
+public fun Modifier.background(
+    color: Int? = null,
+    gradient: Gradient? = null,
+    image: Image? = null,
+    imageAlpha: Float = 1f,
+): Modifier {
+    return background(Background(color, gradient, image, imageAlpha))
 }
 
 

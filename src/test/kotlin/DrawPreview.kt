@@ -47,16 +47,17 @@ private fun initPreview() {
 
 fun main() {
     initPreview()
-    generateParagraph()
-    generateViewLayout1()
-    generateEdgeRatio()
-    generateVisualOverflow()
-    generateMixTypeset()
-    generateGrid()
-    generateShadow()
-    generateBackgroundImage()
-    generateCanvas()
-    generateText1()
+//    generateParagraph()
+//    generateViewLayout1()
+//    generateEdgeRatio()
+//    generateVisualOverflow()
+//    generateMixTypeset()
+//    generateGrid()
+//    generateShadow()
+//    generateBackgroundImage()
+    generateImageAlphaPreview()
+//    generateCanvas()
+//    generateText1()
 }
 
 private fun generateParagraph() {
@@ -459,6 +460,93 @@ private fun generateBackgroundImage() {
         ) { }
     }
     println("generated background.png")
+}
+
+private fun generateImageAlphaPreview() {
+    val bg1 = loadPreviewImage("image", "bg1.jpg")
+
+    fun Layout.previewLabel(text: String) {
+        Text(
+            text = text,
+            color = Color.WHITE,
+            fontSize = 22.dp,
+            modifier = Modifier()
+                .margin(left = 14.dp, bottom = 14.dp)
+                .padding(horizontal = 10.dp, vertical = 6.dp)
+                .background(Color.BLACK.withAlpha(0.55f))
+                .border(1.dp, 6.dp, Color.WHITE.withAlpha(0.55f)),
+            alignment = LayoutAlignment.LEFT_BOTTOM
+        )
+    }
+
+    View(
+        file = previewOutput.resolve("image_alpha.png"),
+        modifier = Modifier()
+            .width(1000.dp)
+            .padding(30.dp)
+            .background(Color.makeRGB(236, 241, 248))
+    ) {
+        Column(Modifier().fillMaxWidth()) {
+            Text(
+                text = "图片透明度与背景图预览",
+                color = Color.BLACK,
+                fontSize = 34.dp,
+                modifier = Modifier().margin(bottom = 20.dp)
+            )
+            Row(Modifier().fillMaxWidth().height(280.dp)) {
+                Box(
+                    Modifier()
+                        .fillWidth()
+                        .fillMaxHeight()
+                        .margin(right = 18.dp)
+                        .background(Color.RED)
+                        .border(2.dp, 16.dp, Color.WHITE)
+                        .shadows(Shadow.ELEVATION_2)
+                ) {
+                    Image(
+                        image = bg1,
+                        modifier = Modifier().fillMaxWidth().fillMaxHeight(),
+                        alpha = 0.45f
+                    )
+                    previewLabel("Image alpha = 0.45")
+                }
+
+                Box(
+                    Modifier()
+                        .fillWidth()
+                        .fillMaxHeight()
+                        .margin(right = 18.dp)
+                        .background(Color.RED)
+                        .border(2.dp, 16.dp, Color.WHITE)
+                        .shadows(Shadow.ELEVATION_2)
+                ) {
+                    Box(
+                        Modifier()
+                            .fillMaxWidth()
+                            .fillMaxHeight()
+                            .background(image = bg1, imageAlpha = 0.45f)
+                    )
+                    previewLabel("背景图 imageAlpha = 0.45")
+                }
+
+                Box(
+                    Modifier()
+                        .fillWidth()
+                        .fillMaxHeight()
+                        .background(
+                            color = Color.BLACK.withAlpha(0.45f),
+                            image = bg1,
+                            imageAlpha = 1f
+                        )
+                        .border(2.dp, 16.dp, Color.WHITE)
+                        .shadows(Shadow.ELEVATION_2)
+                ) {
+                    previewLabel("背景图 + 半透明遮罩")
+                }
+            }
+        }
+    }
+    println("generated image_alpha.png")
 }
 
 private fun generateCanvas() {

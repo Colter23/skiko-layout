@@ -346,7 +346,7 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
 
         // 绘制背景图片
         if (bg.image != null) {
-            canvas.drawImageClip(bg.image, rrect)
+            canvas.drawImageClip(bg.image, rrect, imageAlphaPaint(bg.imageAlpha))
         }
 
         // 绘制渐变色

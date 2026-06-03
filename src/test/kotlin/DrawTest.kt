@@ -1,6 +1,7 @@
 import org.jetbrains.skia.*
 import org.jetbrains.skia.paragraph.TextStyle
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -25,6 +26,11 @@ internal class DrawTest {
 
     private fun loadTestResource(path: String = "", fileName: String) =
         testResource.resolve(path).resolve(fileName)
+
+    private fun solidImage(width: Int, height: Int, color: Int): org.jetbrains.skia.Image =
+        Surface.makeRasterN32Premul(width, height).apply {
+            canvas.clear(color)
+        }.makeImageSnapshot()
 
     private fun measureRoot(
         modifier: Modifier,
@@ -60,6 +66,10 @@ internal class DrawTest {
     private fun redOf(argb: Int): Int = argb ushr 16 and 0xFF
     private fun greenOf(argb: Int): Int = argb ushr 8 and 0xFF
     private fun blueOf(argb: Int): Int = argb and 0xFF
+
+    private fun assertChannelInRange(value: Int, start: Int, endInclusive: Int) {
+        assertTrue(value in start..endInclusive, "颜色通道 $value 不在 $start..$endInclusive 之间")
+    }
 
     @BeforeAll
     fun init() {
@@ -260,6 +270,93 @@ internal class DrawTest {
         val imageLayout = root.child.single() as ImageLayout
         assertEquals(80f, imageLayout.width.px, 0.01f)
         assertEquals(40f, imageLayout.height.px, 0.01f)
+    }
+
+    @Test
+    fun `普通图片透明度按 alpha 混合`() {
+        val blueImage = solidImage(20, 20, Color.BLUE)
+        val root = measureRoot(
+            Modifier().width(20.dp).height(20.dp).background(Color.RED)
+        ) {
+            Image(
+                image = blueImage,
+                modifier = Modifier().width(20.dp).height(20.dp),
+                alpha = 0.5f
+            )
+        }
+
+        val pixel = renderRoot(root).getRGB(10, 10)
+
+        assertEquals(255, alphaOf(pixel))
+        assertChannelInRange(redOf(pixel), 120, 135)
+        assertChannelInRange(greenOf(pixel), 0, 5)
+        assertChannelInRange(blueOf(pixel), 120, 135)
+    }
+
+    @Test
+    fun `背景图片透明度按 imageAlpha 混合`() {
+        val blueImage = solidImage(20, 20, Color.BLUE)
+        val root = measureRoot(
+            Modifier().width(20.dp).height(20.dp).background(Color.RED)
+        ) {
+            Box(
+                Modifier()
+                    .width(20.dp)
+                    .height(20.dp)
+                    .background(image = blueImage, imageAlpha = 0.5f)
+            )
+        }
+
+        val pixel = renderRoot(root).getRGB(10, 10)
+
+        assertEquals(255, alphaOf(pixel))
+        assertChannelInRange(redOf(pixel), 120, 135)
+        assertChannelInRange(greenOf(pixel), 0, 5)
+        assertChannelInRange(blueOf(pixel), 120, 135)
+    }
+
+    @Test
+    fun `背景图片先于颜色遮罩绘制`() {
+        val blueImage = solidImage(20, 20, Color.BLUE)
+        val root = measureRoot(
+            Modifier()
+                .width(20.dp)
+                .height(20.dp)
+                .background(
+                    color = Color.BLACK.withAlpha(0.5f),
+                    image = blueImage,
+                    imageAlpha = 1f
+                )
+        ) { }
+
+        val pixel = renderRoot(root).getRGB(10, 10)
+
+        assertEquals(255, alphaOf(pixel))
+        assertChannelInRange(redOf(pixel), 0, 5)
+        assertChannelInRange(greenOf(pixel), 0, 5)
+        assertChannelInRange(blueOf(pixel), 120, 135)
+    }
+
+    @Test
+    fun `图片透明度参数校验`() {
+        val image = solidImage(20, 20, Color.BLUE)
+
+        assertThrows(IllegalArgumentException::class.java) {
+            measureRoot(Modifier().width(20.dp).height(20.dp)) {
+                Image(image = image, alpha = -0.01f)
+            }
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            measureRoot(Modifier().width(20.dp).height(20.dp)) {
+                Image(image = image, alpha = 1.01f)
+            }
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            Modifier().background(image = image, imageAlpha = -0.01f)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            Modifier().background(image = image, imageAlpha = 1.01f)
+        }
     }
 
     @Test

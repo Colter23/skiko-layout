@@ -22,13 +22,16 @@ public fun Layout.Image(
     image: Image,
     ratio: Float = 0f,
     modifier: Modifier = Modifier(),
-    alignment: LayoutAlignment = LayoutAlignment.DEFAULT
+    alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
+    alpha: Float = 1f,
 ) {
+    require(alpha in 0f..1f) { "图片透明度需在 0..1 之间" }
     Layout(
         layout = ImageLayout(
             image = image,
             ratio = ratio,
             alignment = alignment,
+            alpha = alpha,
             modifier = modifier,
             parentLayout = this
         ),
@@ -42,7 +45,11 @@ public class ImageLayout(
     modifier: Modifier,
     parentLayout: Layout?,
     fontRegistry: FontRegistry = parentLayout?.fontRegistry ?: Fonts.default,
+    public val alpha: Float = 1f,
 ) : Layout(modifier, parentLayout, fontRegistry) {
+    init {
+        require(alpha in 0f..1f) { "图片透明度需在 0..1 之间" }
+    }
 
     private fun naturalRatio(): Float = if (ratio != 0f) ratio else image.width.toFloat() / image.height.toFloat()
 
@@ -175,7 +182,7 @@ public class ImageLayout(
 
     override fun draw(canvas: Canvas) {
         drawBgBox(canvas) {
-            drawImageClip(image, it)
+            drawImageClip(image, it, imageAlphaPaint(alpha))
         }
     }
 }
