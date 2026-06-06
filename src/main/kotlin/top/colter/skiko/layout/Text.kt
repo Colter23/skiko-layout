@@ -4,8 +4,11 @@ import org.jetbrains.skia.*
 import org.jetbrains.skia.paragraph.*
 import top.colter.skiko.*
 import top.colter.skiko.data.LayoutAlignment
+import top.colter.skiko.data.TextShadow
+import top.colter.skiko.data.TextStroke
 import top.colter.skiko.data.place
 import top.colter.skiko.data.toAlignment
+import kotlin.math.max
 import kotlin.math.min
 
 
@@ -31,7 +34,9 @@ public fun Layout.Text(
     maxLinesCount: Int = 1,
     alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     intrinsicAlignment: LayoutAlignment = LayoutAlignment.DEFAULT,
-    modifier: Modifier = Modifier()
+    modifier: Modifier = Modifier(),
+    stroke: TextStroke? = null,
+    textShadows: List<TextShadow> = emptyList(),
 ) {
     Text(
         text = text,
@@ -45,6 +50,8 @@ public fun Layout.Text(
         intrinsicAlignment = intrinsicAlignment,
         maxLinesCount = maxLinesCount,
         modifier = modifier,
+        stroke = stroke,
+        textShadows = textShadows,
     )
 }
 /**
@@ -63,9 +70,11 @@ public fun Layout.Text(
     maxLinesCount: Int = 1,
     alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     intrinsicAlignment: LayoutAlignment = LayoutAlignment.DEFAULT,
-    modifier: Modifier = Modifier()
+    modifier: Modifier = Modifier(),
+    stroke: TextStroke? = null,
+    textShadows: List<TextShadow> = emptyList(),
 ) {
-    val resolvedTextStyle = fontRegistry.resolveTextStyle(textStyle)
+    val resolvedTextStyle = fontRegistry.resolveTextStyle(textStyle).withTextShadows(textShadows)
 
     Layout(
         layout = TextLayout(
@@ -76,6 +85,7 @@ public fun Layout.Text(
             maxLinesCount = maxLinesCount,
             modifier = modifier,
             parentLayout = this,
+            stroke = stroke,
         ),
         content = {},
     )
@@ -90,28 +100,58 @@ public class TextLayout(
     modifier: Modifier,
     parentLayout: Layout?,
     fontRegistry: FontRegistry = parentLayout?.fontRegistry ?: Fonts.default,
+    public val stroke: TextStroke? = null,
 ) : Layout(modifier, parentLayout, fontRegistry) {
 
-    private val paragraphStyle = ParagraphStyle().apply {
+    private val visualOutset: TextVisualOutset = textVisualOutset(stroke, textStyle.shadows)
+
+    private var cachedFillParagraph: Paragraph? = null
+    private var cachedStrokeParagraph: Paragraph? = null
+    private var cachedFillNoShadowParagraph: Paragraph? = null
+    private var layoutWidthPx: Float = -1f
+
+    private fun paragraphStyle(style: TextStyle): ParagraphStyle = ParagraphStyle().apply {
         maxLinesCount = this@TextLayout.maxLinesCount
         ellipsis = "..."
         alignment = this@TextLayout.intrinsicAlignment.toAlignment()
-        textStyle = this@TextLayout.textStyle
+        textStyle = style
     }
 
-    private var cachedParagraph: Paragraph? = null
-    private var layoutWidthPx: Float = -1f
+    private fun buildParagraph(style: TextStyle, widthPx: Float): Paragraph =
+        ParagraphBuilder(paragraphStyle(style), fontRegistry.fonts)
+            .addText(text)
+            .build()
+            .layout(widthPx)
+
+    private fun strokeTextStyle(stroke: TextStroke): TextStyle {
+        val strokePaint = Paint().apply {
+            color = stroke.color
+            mode = PaintMode.STROKE
+            strokeWidth = stroke.width.px
+            isAntiAlias = true
+        }
+        return textStyle.copyStyle().apply {
+            clearShadows()
+            setForeground(strokePaint)
+        }
+    }
+
+    private fun fillTextStyleWithoutShadows(): TextStyle =
+        textStyle.copyStyle().apply { clearShadows() }
 
     private fun resolveParagraph(widthPx: Float): Paragraph {
         val safeWidth = widthPx.coerceAtLeast(1f)
-        val cached = cachedParagraph
+        val cached = cachedFillParagraph
         if (cached != null && layoutWidthPx == safeWidth) return cached
 
-        val paragraph = ParagraphBuilder(paragraphStyle, fontRegistry.fonts)
-            .addText(text)
-            .build()
-            .layout(safeWidth)
-        cachedParagraph = paragraph
+        val paragraph = buildParagraph(textStyle, safeWidth)
+        cachedFillParagraph = paragraph
+        cachedStrokeParagraph = stroke?.let { buildParagraph(strokeTextStyle(it), safeWidth) }
+        cachedFillNoShadowParagraph = if (stroke != null && textStyle.shadows.isNotEmpty()) {
+            buildParagraph(fillTextStyleWithoutShadows(), safeWidth)
+        } else {
+            null
+        }
         layoutWidthPx = safeWidth
         return paragraph
     }
@@ -135,12 +175,16 @@ public class TextLayout(
             (maxOuterWidth - resolvedPadding.horizontal).coerceAtLeast(0.dp)
         else 10000.dp
 
-        val paragraph = resolveParagraph(maxContentWidth.px)
+        val paragraphWidth = (maxContentWidth.px - visualOutset.horizontal).coerceAtLeast(1f)
+        val paragraph = resolveParagraph(paragraphWidth)
         if (width.isNull()) {
-            width = min(paragraph.maxIntrinsicWidth, maxContentWidth.px.coerceAtLeast(0f)).toDp() +
+            width = min(
+                paragraph.maxIntrinsicWidth + visualOutset.horizontal,
+                maxContentWidth.px.coerceAtLeast(0f)
+            ).toDp() +
                     resolvedPadding.horizontal
         }
-        if (height.isNull()) height = paragraph.height.toDp() + resolvedPadding.vertical
+        if (height.isNull()) height = (paragraph.height + visualOutset.vertical).toDp() + resolvedPadding.vertical
 
         finishMeasure()
     }
@@ -152,7 +196,65 @@ public class TextLayout(
 
     override fun draw(canvas: Canvas) {
         drawBgBox(canvas) {
-            cachedParagraph?.paint(canvas, it.left, it.top)
+            val fillParagraph = cachedFillParagraph ?: return@drawBgBox
+            val x = it.left + visualOutset.left
+            val y = it.top + visualOutset.top
+
+            if (stroke == null) {
+                fillParagraph.paint(canvas, x, y)
+                return@drawBgBox
+            }
+
+            if (textStyle.shadows.isNotEmpty()) fillParagraph.paint(canvas, x, y)
+            cachedStrokeParagraph?.paint(canvas, x, y)
+            (cachedFillNoShadowParagraph ?: fillParagraph).paint(canvas, x, y)
         }
     }
+}
+
+private fun TextStyle.withTextShadows(shadows: List<TextShadow>): TextStyle {
+    if (shadows.isEmpty()) return this
+    return copyStyle().apply {
+        shadows.forEach {
+            addShadow(
+                org.jetbrains.skia.paragraph.Shadow(
+                    it.color,
+                    it.offsetX.px,
+                    it.offsetY.px,
+                    it.blur.px.toDouble()
+                )
+            )
+        }
+    }
+}
+
+private data class TextVisualOutset(
+    val left: Float,
+    val top: Float,
+    val right: Float,
+    val bottom: Float,
+) {
+    val horizontal: Float get() = left + right
+    val vertical: Float get() = top + bottom
+}
+
+private fun textVisualOutset(
+    stroke: TextStroke?,
+    shadows: Array<org.jetbrains.skia.paragraph.Shadow>,
+): TextVisualOutset {
+    val strokeOutset = stroke?.width?.px ?: 0f
+    var left = strokeOutset
+    var top = strokeOutset
+    var right = strokeOutset
+    var bottom = strokeOutset
+
+    shadows.forEach {
+        val blurOutset = it.blurSigma.toFloat() * 3f
+        left = max(left, (blurOutset - it.offsetX).coerceAtLeast(0f))
+        top = max(top, (blurOutset - it.offsetY).coerceAtLeast(0f))
+        right = max(right, (blurOutset + it.offsetX).coerceAtLeast(0f))
+        bottom = max(bottom, (blurOutset + it.offsetY).coerceAtLeast(0f))
+    }
+
+    return TextVisualOutset(left, top, right, bottom)
 }

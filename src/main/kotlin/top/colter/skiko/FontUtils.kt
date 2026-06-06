@@ -252,6 +252,9 @@ public fun TextStyle.copyStyle(): TextStyle {
     result.fontStyle = fontStyle
     result.fontFamilies = fontFamilies.copyOf()
     result.letterSpacing = letterSpacing
+    foreground?.let { result.setForeground(it.makeClone()) }
+    background?.let { result.setBackground(it.makeClone()) }
+    shadows.forEach { result.addShadow(it) }
     typeface?.let { result.setTypeface(it) }
     return result
 }

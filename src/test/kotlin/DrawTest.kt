@@ -1,4 +1,5 @@
 import org.jetbrains.skia.*
+import org.jetbrains.skia.paragraph.Shadow as ParagraphShadow
 import org.jetbrains.skia.paragraph.TextStyle
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -70,6 +71,22 @@ internal class DrawTest {
     private fun assertChannelInRange(value: Int, start: Int, endInclusive: Int) {
         assertTrue(value in start..endInclusive, "颜色通道 $value 不在 $start..$endInclusive 之间")
     }
+
+    private fun countPixels(image: BufferedImage, predicate: (Int) -> Boolean): Int {
+        var count = 0
+        for (y in 0 until image.height) {
+            for (x in 0 until image.width) {
+                if (predicate(image.getRGB(x, y))) count++
+            }
+        }
+        return count
+    }
+
+    private fun isRedDominant(argb: Int): Boolean =
+        alphaOf(argb) > 0 && redOf(argb) > 120 && redOf(argb) > greenOf(argb) + 40 && redOf(argb) > blueOf(argb) + 40
+
+    private fun isWhiteDominant(argb: Int): Boolean =
+        alphaOf(argb) > 0 && redOf(argb) > 180 && greenOf(argb) > 180 && blueOf(argb) > 180
 
     @BeforeAll
     fun init() {
@@ -197,6 +214,85 @@ internal class DrawTest {
 
         assertEquals(32f, padded.width.px - plain.width.px, 0.01f)
         assertEquals(32f, padded.height.px - plain.height.px, 0.01f)
+    }
+
+    @Test
+    fun `文字样式复制保留绘制效果`() {
+        val style = TextStyle()
+            .setColor(Color.BLACK)
+            .setFontSize(24f)
+            .setForeground(Paint().apply {
+                color = Color.RED
+                mode = PaintMode.STROKE
+                strokeWidth = 3f
+            })
+            .setBackground(Paint().apply {
+                color = Color.YELLOW
+            })
+            .addShadow(ParagraphShadow(Color.BLUE, 1f, 2f, 3.0))
+
+        val copy = style.copyStyle()
+
+        assertEquals(Color.RED, copy.foreground!!.color)
+        assertEquals(PaintMode.STROKE, copy.foreground!!.mode)
+        assertEquals(3f, copy.foreground!!.strokeWidth, 0.01f)
+        assertEquals(Color.YELLOW, copy.background!!.color)
+        assertEquals(1, copy.shadows.size)
+        assertEquals(Color.BLUE, copy.shadows.single().color)
+    }
+
+    @Test
+    fun `文字描边绘制描边和填充`() {
+        val root = measureRoot(
+            Modifier().width(240.dp).height(110.dp).background(Color.BLACK)
+        ) {
+            Text(
+                text = "TEXT",
+                color = Color.WHITE,
+                fontSize = 54.dp,
+                stroke = TextStroke(5.dp, Color.RED)
+            )
+        }
+
+        val image = renderRoot(root)
+
+        assertTrue(countPixels(image, ::isRedDominant) > 30)
+        assertTrue(countPixels(image, ::isWhiteDominant) > 30)
+    }
+
+    @Test
+    fun `文字阴影绘制偏移阴影`() {
+        val root = measureRoot(
+            Modifier().width(260.dp).height(120.dp).background(Color.BLACK)
+        ) {
+            Text(
+                text = "TEXT",
+                color = Color.WHITE,
+                fontSize = 54.dp,
+                textShadows = listOf(
+                    TextShadow(
+                        offsetX = 10.dp,
+                        offsetY = 8.dp,
+                        color = Color.RED
+                    )
+                )
+            )
+        }
+
+        val image = renderRoot(root)
+
+        assertTrue(countPixels(image, ::isRedDominant) > 30)
+        assertTrue(countPixels(image, ::isWhiteDominant) > 30)
+    }
+
+    @Test
+    fun `文字效果参数校验`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            TextStroke(width = (-1).dp, color = Color.RED)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            TextShadow(blur = (-1).dp, color = Color.RED)
+        }
     }
 
     @Test

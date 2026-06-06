@@ -55,7 +55,8 @@ fun main() {
 //    generateGrid()
 //    generateShadow()
 //    generateBackgroundImage()
-    generateImageAlphaPreview()
+//    generateImageAlphaPreview()
+    generateTextEffectPreview()
 //    generateCanvas()
 //    generateText1()
 }
@@ -547,6 +548,194 @@ private fun generateImageAlphaPreview() {
         }
     }
     println("generated image_alpha.png")
+}
+
+private fun generateTextEffectPreview() {
+    val titleColor = Color.makeRGB(39, 48, 67)
+    val cardBorder = Color.makeRGB(205, 214, 228)
+
+    fun Layout.effectCard(title: String, content: BoxLayout.() -> Unit) {
+        Box(
+            Modifier()
+                .fillWidth()
+                .fillMaxHeight()
+                .margin(right = 18.dp)
+                .padding(16.dp)
+                .background(Color.WHITE.withAlpha(0.82f))
+                .border(2.dp, 16.dp, cardBorder)
+                .shadows(Shadow.ELEVATION_1)
+        ) {
+            Text(
+                text = title,
+                color = titleColor,
+                fontSize = 18.dp,
+                modifier = Modifier().margin(bottom = 10.dp)
+            )
+            Box(
+                Modifier()
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .padding(top = 34.dp),
+                content = content
+            )
+        }
+    }
+
+    val richBaseStyle = TextStyle()
+        .setColor(Color.makeRGB(39, 48, 67))
+        .setFontSize(28f)
+        .setFontFamily(Fonts.default.textTypeface!!.familyName)
+    val richShadowStyle = richBaseStyle.copyStyle()
+        .setColor(Color.makeRGB(218, 64, 87))
+        .addShadow(
+            org.jetbrains.skia.paragraph.Shadow(
+                Color.makeRGB(53, 96, 210).withAlpha(0.55f),
+                5f,
+                5f,
+                2.0
+            )
+        )
+    val richParagraph = RichParagraphBuilder(richBaseStyle)
+        .addText("富文本 ")
+        .addText("阴影样式", richShadowStyle)
+        .addText(" 保留")
+        .build()
+
+    View(
+        file = previewOutput.resolve("text_effects.png"),
+        modifier = Modifier()
+            .width(1100.dp)
+            .padding(30.dp)
+            .background(Color.makeRGB(236, 241, 248))
+    ) {
+        Column(Modifier().fillMaxWidth()) {
+            Text(
+                text = "文字描边与文字阴影预览",
+                color = titleColor,
+                fontSize = 36.dp,
+                modifier = Modifier().margin(bottom = 22.dp)
+            )
+
+            Row(Modifier().fillMaxWidth().height(180.dp).margin(bottom = 18.dp)) {
+                effectCard("纯描边 + 填充") {
+                    Text(
+                        text = "OUTLINE",
+                        color = Color.WHITE,
+                        fontSize = 52.dp,
+                        stroke = TextStroke(5.dp, Color.makeRGB(38, 67, 132)),
+                        alignment = LayoutAlignment.CENTER
+                    )
+                }
+
+                effectCard("硬阴影") {
+                    Text(
+                        text = "SHADOW",
+                        color = Color.BLACK,
+                        fontSize = 50.dp,
+                        textShadows = listOf(
+                            TextShadow(9.dp, 8.dp, 0.dp, Color.makeRGB(218, 64, 87))
+                        ),
+                        alignment = LayoutAlignment.CENTER
+                    )
+                }
+
+                effectCard("柔和阴影") {
+                    Text(
+                        text = "柔和阴影",
+                        color = Color.makeRGB(39, 48, 67),
+                        fontSize = 46.dp,
+                        textShadows = listOf(
+                            TextShadow(6.dp, 8.dp, 4.dp, Color.makeRGB(70, 102, 163).withAlpha(0.38f))
+                        ),
+                        alignment = LayoutAlignment.CENTER
+                    )
+                }
+            }
+
+            Row(Modifier().fillMaxWidth().height(180.dp).margin(bottom = 18.dp)) {
+                effectCard("描边 + 柔阴影") {
+                    Text(
+                        text = "描边阴影",
+                        color = Color.makeRGB(255, 242, 166),
+                        fontSize = 46.dp,
+                        stroke = TextStroke(4.dp, Color.makeRGB(39, 48, 67)),
+                        textShadows = listOf(
+                            TextShadow(9.dp, 9.dp, 3.dp, Color.BLACK.withAlpha(0.35f))
+                        ),
+                        alignment = LayoutAlignment.CENTER
+                    )
+                }
+
+                effectCard("多层彩色阴影") {
+                    Text(
+                        text = "多层阴影",
+                        color = Color.WHITE,
+                        fontSize = 46.dp,
+                        stroke = TextStroke(2.dp, Color.makeRGB(39, 48, 67)),
+                        textShadows = listOf(
+                            TextShadow((-5).dp, 5.dp, 0.dp, Color.makeRGB(46, 196, 182).withAlpha(0.8f)),
+                            TextShadow(6.dp, 7.dp, 0.dp, Color.makeRGB(255, 107, 107).withAlpha(0.8f)),
+                            TextShadow(0.dp, 12.dp, 5.dp, Color.BLACK.withAlpha(0.32f))
+                        ),
+                        alignment = LayoutAlignment.CENTER
+                    )
+                }
+
+                effectCard("小字号细描边") {
+                    Text(
+                        text = "小字号 24dp",
+                        color = Color.makeRGB(39, 48, 67),
+                        fontSize = 24.dp,
+                        stroke = TextStroke(1.dp, Color.WHITE),
+                        textShadows = listOf(
+                            TextShadow(3.dp, 3.dp, 1.dp, Color.BLACK.withAlpha(0.25f))
+                        ),
+                        alignment = LayoutAlignment.CENTER
+                    )
+                }
+            }
+
+            Row(Modifier().fillMaxWidth().height(190.dp)) {
+                effectCard("固定宽度换行") {
+                    Text(
+                        text = "描边和阴影在自动换行时也应保持完整显示",
+                        color = Color.makeRGB(39, 48, 67),
+                        fontSize = 31.dp,
+                        maxLinesCount = 2,
+                        stroke = TextStroke(2.dp, Color.WHITE),
+                        textShadows = listOf(
+                            TextShadow(5.dp, 5.dp, 2.dp, Color.BLACK.withAlpha(0.22f))
+                        ),
+                        modifier = Modifier().fillMaxWidth(),
+                        intrinsicAlignment = LayoutAlignment.CENTER,
+                        alignment = LayoutAlignment.CENTER
+                    )
+                }
+
+                effectCard("富文本 TextStyle 阴影") {
+                    RichText(
+                        paragraph = richParagraph,
+                        maxLinesCount = 2,
+                        alignment = LayoutAlignment.CENTER
+                    )
+                }
+
+                effectCard("大描边边界外扩") {
+                    Text(
+                        text = "EDGE",
+                        color = Color.makeRGB(255, 255, 255),
+                        fontSize = 54.dp,
+                        stroke = TextStroke(8.dp, Color.makeRGB(218, 64, 87)),
+                        textShadows = listOf(
+                            TextShadow(0.dp, 10.dp, 4.dp, Color.BLACK.withAlpha(0.28f))
+                        ),
+                        alignment = LayoutAlignment.CENTER
+                    )
+                }
+            }
+        }
+    }
+    println("generated text_effects.png")
 }
 
 private fun generateCanvas() {

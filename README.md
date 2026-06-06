@@ -40,8 +40,8 @@ dp 默认与 px 1:1 转换
 宫格 `Grid` 宫格    
 
 ### 内容元素
-图片 `Image`    
-文本 `Text` 纯文本元素    
+图片 `Image`，支持透明度 `alpha`    
+文本 `Text` 纯文本元素，支持文字描边与文字阴影    
 富文本 `RichText` 支持自定义样式与emoji图片    
 画板 `Canvas` 支持自行绘制图形(v0.0.3)   
 
@@ -61,13 +61,13 @@ dp 默认与 px 1:1 转换
 按比例继承父元素高度 `fillRatioHeight`    
 内边距 `padding`    
 外边距 `margin`    
-比例内边距 `paddingRatio`
-比例外边距 `marginRatio`
-视觉宽度比例 `overflowRatioWidth`
-视觉高度比例 `overflowRatioHeight`
-视觉外扩 `bleed` / `bleedRatio`
-视觉偏移 `offset` / `offsetRatio`
-背景 `background`  
+比例内边距 `paddingRatio`    
+比例外边距 `marginRatio`    
+视觉宽度比例 `overflowRatioWidth`    
+视觉高度比例 `overflowRatioHeight`    
+视觉外扩 `bleed` / `bleedRatio`    
+视觉偏移 `offset` / `offsetRatio`    
+背景 `background`，支持背景图 `image` 与背景图透明度 `imageAlpha`    
 边框 `border`    
 阴影 `shadows`   
 圆角 `radius` (v0.0.4)    
@@ -198,6 +198,36 @@ Box(Modifier().width(300.dp)) {
 
 `bleedRatio(left = 0.1f)` 表示向左额外绘制父级内容宽度的 10%，`offsetRatio(x = -0.1f)` 表示视觉上向左移动父级内容宽度的 10%。
 
+## 图片与背景图
+
+`Image` 支持通过 `alpha` 控制图片本身透明度，只影响图片像素，不影响背景、边框和阴影。
+
+```kotlin
+Image(
+    image = avatar,
+    alpha = 0.5f,
+    modifier = Modifier()
+        .width(160.dp)
+        .height(160.dp)
+        .background(Color.RED)
+)
+```
+
+背景图通过 `Modifier.background(image = ...)` 绘制，`imageAlpha` 控制背景图透明度。背景图会先绘制，随后绘制渐变或纯色，因此可以用半透明颜色作为遮罩。
+
+```kotlin
+Box(
+    Modifier()
+        .fillMaxWidth()
+        .height(320.dp)
+        .background(
+            image = bg,
+            imageAlpha = 0.65f,
+            color = Color.BLACK.withAlpha(0.35f)
+        )
+)
+```
+
 ## 测试与预览
 
 - [DrawPreview](src/test/kotlin/DrawPreview.kt) 用来直接生成图片，运行 `main()` 就会写出预览图
@@ -236,6 +266,46 @@ View(
 ```
 
 ## 文字
+
+### 文字描边与阴影
+
+`Text` 支持 `stroke` 和 `textShadows`。描边和阴影会自动预留视觉外扩，减少边缘被裁剪。
+
+```kotlin
+Text(
+    text = "描边阴影",
+    color = Color.WHITE,
+    fontSize = 48.dp,
+    stroke = TextStroke(
+        width = 4.dp,
+        color = Color.BLACK
+    ),
+    textShadows = listOf(
+        TextShadow(
+            offsetX = 6.dp,
+            offsetY = 6.dp,
+            blur = 3.dp,
+            color = Color.BLACK.withAlpha(0.45f)
+        )
+    )
+)
+```
+
+`TextShadow.blur` 会作为 Skia Paragraph 的 `blurSigma` 使用。富文本 `RichText` 可直接在 `TextStyle` 上使用 Skia 原生阴影，样式复制时会保留 `foreground`、`background` 和 `shadows`。
+
+```kotlin
+val style = TextStyle()
+    .setColor(Color.RED)
+    .setFontSize(32f)
+    .addShadow(
+        org.jetbrains.skia.paragraph.Shadow(
+            Color.BLACK.withAlpha(0.4f),
+            4f,
+            4f,
+            2.0
+        )
+    )
+```
 
 ### 富文本构建器
 ```kotlin
@@ -282,6 +352,8 @@ fun Layout.RichParagraphTest(modifier: Modifier) {
 ## TODO
 - [x] 背景图片
 - [x] 背景渐变色
+- [x] 图片透明度
+- [x] 文字描边与文字阴影
 - [ ] 主题
 - [ ] ~~提取图片主题色, 使用 [Material Color Utilities](https://github.com/material-foundation/material-color-utilities)~~ (效果不佳，暂时放弃)
 - [ ] more...
