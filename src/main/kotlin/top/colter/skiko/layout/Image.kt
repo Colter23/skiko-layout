@@ -3,6 +3,7 @@ package top.colter.skiko.layout
 import org.jetbrains.skia.Canvas
 import org.jetbrains.skia.Image
 import top.colter.skiko.*
+import top.colter.skiko.data.GradientBlur
 import top.colter.skiko.data.LayoutAlignment
 import top.colter.skiko.data.Ratio
 import top.colter.skiko.data.place
@@ -24,6 +25,7 @@ public fun Layout.Image(
     modifier: Modifier = Modifier(),
     alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     alpha: Float = 1f,
+    gradientBlur: GradientBlur? = null,
 ) {
     require(alpha in 0f..1f) { "图片透明度需在 0..1 之间" }
     Layout(
@@ -32,6 +34,7 @@ public fun Layout.Image(
             ratio = ratio,
             alignment = alignment,
             alpha = alpha,
+            gradientBlur = gradientBlur,
             modifier = modifier,
             parentLayout = this
         ),
@@ -46,10 +49,14 @@ public class ImageLayout(
     parentLayout: Layout?,
     fontRegistry: FontRegistry = parentLayout?.fontRegistry ?: Fonts.default,
     public val alpha: Float = 1f,
+    public val gradientBlur: GradientBlur? = null,
 ) : Layout(modifier, parentLayout, fontRegistry) {
     init {
         require(alpha in 0f..1f) { "图片透明度需在 0..1 之间" }
     }
+
+    private var cachedGradientBlurKey: GradientBlurCacheKey? = null
+    private var cachedGradientBlurImage: Image? = null
 
     private fun naturalRatio(): Float = if (ratio != 0f) ratio else image.width.toFloat() / image.height.toFloat()
 
@@ -182,7 +189,21 @@ public class ImageLayout(
 
     override fun draw(canvas: Canvas) {
         drawBgBox(canvas) {
-            drawImageClip(image, it, imageAlphaPaint(alpha))
+            if (gradientBlur == null) {
+                drawImageClip(image, it, imageAlphaPaint(alpha))
+            } else {
+                val (targetWidth, targetHeight) = gradientBlurTargetSize(it)
+                val key = gradientBlurCacheKey(image, targetWidth, targetHeight, gradientBlur)
+                val blurredImage = if (cachedGradientBlurKey == key && cachedGradientBlurImage != null) {
+                    cachedGradientBlurImage!!
+                } else {
+                    image.gradientBlurred(targetWidth, targetHeight, gradientBlur).also { result ->
+                        cachedGradientBlurKey = key
+                        cachedGradientBlurImage = result
+                    }
+                }
+                drawImageRRect(blurredImage, it, imageAlphaPaint(alpha))
+            }
         }
     }
 }

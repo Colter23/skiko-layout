@@ -40,7 +40,7 @@ dp 默认与 px 1:1 转换
 宫格 `Grid` 宫格    
 
 ### 内容元素
-图片 `Image`，支持透明度 `alpha`    
+图片 `Image`，支持透明度 `alpha` 与渐变模糊 `gradientBlur`
 文本 `Text` 纯文本元素，支持文字描边与文字阴影    
 富文本 `RichText` 支持自定义样式与emoji图片    
 画板 `Canvas` 支持自行绘制图形(v0.0.3)   
@@ -67,7 +67,7 @@ dp 默认与 px 1:1 转换
 视觉高度比例 `overflowRatioHeight`    
 视觉外扩 `bleed` / `bleedRatio`    
 视觉偏移 `offset` / `offsetRatio`    
-背景 `background`，支持背景图 `image` 与背景图透明度 `imageAlpha`    
+背景 `background`，支持背景图 `image`、背景图透明度 `imageAlpha` 与背景图渐变模糊 `imageGradientBlur`
 边框 `border`    
 阴影 `shadows`   
 圆角 `radius` (v0.0.4)    
@@ -228,6 +228,48 @@ Box(
 )
 ```
 
+图片渐变模糊通过 `GradientBlur` 控制，常用场景可以直接使用 `GradientBlur.edge(...)`，表示两侧模糊、中间清晰。`angle = 0f` 表示从左到右，`90f` 表示从上到下。
+
+```kotlin
+Image(
+    image = bg,
+    gradientBlur = GradientBlur.edge(
+        maxBlur = 24.dp,
+        angle = 0f,
+        clearStart = 0.35f,
+        clearEnd = 0.65f
+    )
+)
+
+Box(
+    Modifier()
+        .fillMaxWidth()
+        .height(320.dp)
+        .background(
+            image = bg,
+            imageGradientBlur = GradientBlur.edge(24.dp, angle = 90f),
+            color = Color.BLACK.withAlpha(0.28f)
+        )
+)
+```
+
+如果图片会反复使用，并且尺寸、裁剪和模糊效果基本不变，建议先预生成，再按普通图片绘制，运行时性能最好。
+
+```kotlin
+val blurred = bg.gradientBlurred(
+    width = 1000,
+    height = 500,
+    blur = GradientBlur.edge(24.dp)
+)
+
+bg.writeGradientBlurred(
+    file = File("bg_blurred.png"),
+    width = 1000,
+    height = 500,
+    blur = GradientBlur.edge(24.dp)
+)
+```
+
 ## 测试与预览
 
 - [DrawPreview](src/test/kotlin/DrawPreview.kt) 用来直接生成图片，运行 `main()` 就会写出预览图
@@ -353,6 +395,7 @@ fun Layout.RichParagraphTest(modifier: Modifier) {
 - [x] 背景图片
 - [x] 背景渐变色
 - [x] 图片透明度
+- [x] 图片渐变模糊
 - [x] 文字描边与文字阴影
 - [ ] 主题
 - [ ] ~~提取图片主题色, 使用 [Material Color Utilities](https://github.com/material-foundation/material-color-utilities)~~ (效果不佳，暂时放弃)

@@ -56,7 +56,8 @@ fun main() {
 //    generateShadow()
 //    generateBackgroundImage()
 //    generateImageAlphaPreview()
-    generateTextEffectPreview()
+    generateProgressiveImageBlurPreview()
+//    generateTextEffectPreview()
 //    generateCanvas()
 //    generateText1()
 }
@@ -548,6 +549,125 @@ private fun generateImageAlphaPreview() {
         }
     }
     println("generated image_alpha.png")
+}
+
+private fun generateProgressiveImageBlurPreview() {
+    val bg1 = loadPreviewImage("image", "bg1.jpg")
+    val horizontal = GradientBlur.edge(maxBlur = 26.dp, clearStart = 0.38f, clearEnd = 0.62f)
+    val vertical = GradientBlur.edge(maxBlur = 26.dp, angle = 90f, clearStart = 0.36f, clearEnd = 0.64f)
+    val diagonal = GradientBlur.edge(maxBlur = 30.dp, angle = 35f, clearStart = 0.34f, clearEnd = 0.66f, steps = 8)
+    val multiStops = GradientBlur(
+        angle = 0f,
+        stops = listOf(
+            GradientBlurStop(0f, 0.dp),
+            GradientBlurStop(0.22f, 22.dp),
+            GradientBlurStop(0.5f, 4.dp),
+            GradientBlurStop(0.78f, 22.dp),
+            GradientBlurStop(1f, 0.dp)
+        ),
+        steps = 8,
+        stripWidth = 3.dp
+    )
+    val preRendered = bg1.gradientBlurred(330, 210, diagonal)
+
+    fun Layout.previewCard(title: String, content: BoxLayout.() -> Unit) {
+        Box(
+            Modifier()
+                .fillWidth()
+                .fillMaxHeight()
+                .margin(right = 18.dp)
+                .padding(14.dp)
+                .background(Color.WHITE.withAlpha(0.82f))
+                .border(2.dp, 16.dp, Color.makeRGB(205, 214, 228))
+                .shadows(Shadow.ELEVATION_1)
+        ) {
+            Text(
+                text = title,
+                color = Color.makeRGB(39, 48, 67),
+                fontSize = 20.dp,
+                modifier = Modifier().margin(bottom = 10.dp)
+            )
+            Box(
+                Modifier()
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .padding(top = 40.dp),
+                content = content
+            )
+        }
+    }
+
+    View(
+        file = previewOutput.resolve("progressive_image_blur.png"),
+        modifier = Modifier()
+            .width(1180.dp)
+            .padding(30.dp)
+            .background(Color.makeRGB(236, 241, 248))
+    ) {
+        Column(Modifier().fillMaxWidth()) {
+            Text(
+                text = "图片渐变模糊预览",
+                color = Color.makeRGB(39, 48, 67),
+                fontSize = 36.dp,
+                modifier = Modifier().margin(bottom = 22.dp)
+            )
+
+            Row(Modifier().fillMaxWidth().height(270.dp).margin(bottom = 18.dp)) {
+                previewCard("水平：两侧模糊，中间清晰") {
+                    Image(
+                        image = bg1,
+                        modifier = Modifier().fillMaxWidth().fillMaxHeight(),
+                        gradientBlur = horizontal
+                    )
+                }
+                previewCard("垂直：上下模糊，中间清晰") {
+                    Image(
+                        image = bg1,
+                        modifier = Modifier().fillMaxWidth().fillMaxHeight(),
+                        gradientBlur = vertical
+                    )
+                }
+                previewCard("斜向：35 度渐变模糊") {
+                    Image(
+                        image = bg1,
+                        modifier = Modifier().fillMaxWidth().fillMaxHeight(),
+                        gradientBlur = diagonal
+                    )
+                }
+            }
+
+            Row(Modifier().fillMaxWidth().height(270.dp)) {
+                previewCard("多级 stop：清晰与模糊交替") {
+                    Image(
+                        image = bg1,
+                        modifier = Modifier().fillMaxWidth().fillMaxHeight(),
+                        gradientBlur = multiStops
+                    )
+                }
+                previewCard("背景图：模糊 + 半透明遮罩") {
+                    Box(
+                        Modifier()
+                            .fillMaxWidth()
+                            .fillMaxHeight()
+                            .background(
+                                image = bg1,
+                                imageGradientBlur = horizontal,
+                                imageAlpha = 0.95f,
+                                color = Color.BLACK.withAlpha(0.28f)
+                            )
+                    )
+                }
+                previewCard("预生成：直接绘制处理后图片") {
+                    Image(
+                        image = preRendered,
+                        modifier = Modifier().fillMaxWidth().fillMaxHeight(),
+                        alpha = 0.92f
+                    )
+                }
+            }
+        }
+    }
+    println("generated progressive_image_blur.png")
 }
 
 private fun generateTextEffectPreview() {

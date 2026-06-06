@@ -15,6 +15,7 @@ public data class Background(
     val gradient: Gradient? = null,
     val image: Image? = null,
     val imageAlpha: Float = 1f,
+    val imageGradientBlur: GradientBlur? = null,
 ) {
     init {
         require(imageAlpha in 0f..1f) { "背景图片透明度需在 0..1 之间" }

@@ -468,8 +468,9 @@ public fun Modifier.background(
     gradient: Gradient? = null,
     image: Image? = null,
     imageAlpha: Float = 1f,
+    imageGradientBlur: GradientBlur? = null,
 ): Modifier {
-    return background(Background(color, gradient, image, imageAlpha))
+    return background(Background(color, gradient, image, imageAlpha, imageGradientBlur))
 }
 
 

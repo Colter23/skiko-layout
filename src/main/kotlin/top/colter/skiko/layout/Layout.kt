@@ -88,6 +88,8 @@ public abstract class Layout(
         isAntiAlias = true
     }
     internal val drawCornerRadii: FloatArray = FloatArray(4)
+    internal var backgroundGradientBlurCacheKey: GradientBlurCacheKey? = null
+    internal var backgroundGradientBlurCacheImage: Image? = null
 
     // 宽高（不包括外边距）
     public var width: Dp = Dp.NULL
@@ -346,7 +348,21 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
 
         // 绘制背景图片
         if (bg.image != null) {
-            canvas.drawImageClip(bg.image, rrect, imageAlphaPaint(bg.imageAlpha))
+            if (bg.imageGradientBlur == null) {
+                canvas.drawImageClip(bg.image, rrect, imageAlphaPaint(bg.imageAlpha))
+            } else {
+                val (targetWidth, targetHeight) = gradientBlurTargetSize(rrect)
+                val key = gradientBlurCacheKey(bg.image, targetWidth, targetHeight, bg.imageGradientBlur)
+                val blurredImage = if (backgroundGradientBlurCacheKey == key && backgroundGradientBlurCacheImage != null) {
+                    backgroundGradientBlurCacheImage!!
+                } else {
+                    bg.image.gradientBlurred(targetWidth, targetHeight, bg.imageGradientBlur).also {
+                        backgroundGradientBlurCacheKey = key
+                        backgroundGradientBlurCacheImage = it
+                    }
+                }
+                canvas.drawImageRRect(blurredImage, rrect, imageAlphaPaint(bg.imageAlpha))
+            }
         }
 
         // 绘制渐变色
