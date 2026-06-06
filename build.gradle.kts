@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    kotlin("jvm") version "2.3.21"
+    kotlin("jvm") version "2.4.0"
     id("maven-publish")
     id("signing")
 }
@@ -19,7 +19,7 @@ dependencies {
     val skikoVersion = "0.148.1"
 
     compileOnly("org.jetbrains.skiko:skiko-awt:$skikoVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
 
     val osName = System.getProperty("os.name")
     val targetOs = when {
