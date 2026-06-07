@@ -16,7 +16,9 @@ package top.colter.skiko
 public value class Dp(private val value: Float) {
     public companion object {
         public var factor: Float = 1f
-        public val NULL: Dp = Dp(0f)
+        // 使用 NaN 作为“未设置”哨兵，使合法的 0.dp 与未设置可区分。
+        // NaN 参与算术会自然传播（未设置经过运算仍是未设置）。
+        public val NULL: Dp = Dp(Float.NaN)
 
         public fun max(a: Dp, b: Dp): Dp = Dp(a.value.coerceAtLeast(b.value))
         public fun min(a: Dp, b: Dp): Dp = Dp(a.value.coerceAtMost(b.value))
@@ -24,7 +26,7 @@ public value class Dp(private val value: Float) {
 
     public val px: Float get() = value * factor
 
-    public fun isNull(): Boolean = this == NULL
+    public fun isNull(): Boolean = value.isNaN()
     public fun isNotNull(): Boolean = !isNull()
     public fun coerceAtLeast(minimumValue: Dp): Dp = if (this < minimumValue) minimumValue else this
     public fun coerceAtMost(maximumValue: Dp): Dp = if (this > maximumValue) maximumValue else this

@@ -495,9 +495,9 @@ public fun Modifier.border(
     radius: List<Dp> = listOf(0.dp, 0.dp, 0.dp, 0.dp),
     color: Int = Color.WHITE,
 ): Modifier {
-    border(Border(width, radius, color))
-    if (radius.any { it > 0.dp }) shape = BoxShape.Rounded(radius)
-    return this
+    // border(Border) 已在 shape 为 Rectangle 时按 radius 推导圆角，
+    // 这里不再无条件覆盖，避免把显式设置的 circle()/shape() 改写掉
+    return border(Border(width, radius, color))
 }
 /**
  * 边框
@@ -511,9 +511,7 @@ public fun Modifier.border(
     color: Int = Color.WHITE,
 ): Modifier {
     val radii = listOf(radius, radius, radius, radius)
-    border(Border(width, radii, color))
-    if (radius > 0.dp) shape = BoxShape.Rounded(radii)
-    return this
+    return border(Border(width, radii, color))
 }
 
 
