@@ -65,9 +65,9 @@ dp 默认与 px 1:1 转换
 比例外边距 `marginRatio`    
 视觉宽度比例 `overflowRatioWidth`    
 视觉高度比例 `overflowRatioHeight`    
-视觉外扩 `bleed` / `bleedRatio`    
-视觉偏移 `offset` / `offsetRatio`    
-背景 `background`，支持背景图 `image`、背景图透明度 `imageAlpha` 与背景图渐变模糊 `imageGradientBlur`
+视觉外扩 `bleed` / `bleedRatio` (v0.0.4)     
+视觉偏移 `offset` / `offsetRatio` (v0.0.4)    
+背景 `background`，支持背景图 `image`、背景图透明度 `imageAlpha` 与背景图渐变模糊 `imageGradientBlur` (v0.0.4)    
 边框 `border`    
 阴影 `shadows`   
 圆角 `radius` (v0.0.4)    
