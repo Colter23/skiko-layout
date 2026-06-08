@@ -390,22 +390,26 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
                 AxisAlignment.CENTER -> rrect.top + (rrect.bottom - rrect.top) / 2
                 AxisAlignment.END -> rrect.bottom
             }
-            canvas.drawRRect(rrect, drawGradientPaint.apply {
-                shader = Shader.makeLinearGradient(
-                    x0,
-                    y0,
-                    x1,
-                    y1,
-                    Gradient(
-                        Gradient.Colors(
-                            colors = bg.gradient.colors.map { Color4f(it) }.toTypedArray(),
-                            positions = null,
-                            tileMode = FilterTileMode.CLAMP,
-                            colorSpace = ColorSpace.sRGB,
-                        )
-                    ),
-                )
-            })
+            // skiko 的 paint.shader setter 不会释放旧 shader，
+            // 这里用完即移出并 close，避免反复绘制时 native 内存持续增长
+            val gradientShader = Shader.makeLinearGradient(
+                x0,
+                y0,
+                x1,
+                y1,
+                Gradient(
+                    Gradient.Colors(
+                        colors = bg.gradient.colors.map { Color4f(it) }.toTypedArray(),
+                        positions = null,
+                        tileMode = FilterTileMode.CLAMP,
+                        colorSpace = ColorSpace.sRGB,
+                    )
+                ),
+            )
+            drawGradientPaint.shader = gradientShader
+            canvas.drawRRect(rrect, drawGradientPaint)
+            drawGradientPaint.shader = null
+            gradientShader.close()
         }
 
         // 绘制纯色

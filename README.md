@@ -360,7 +360,7 @@ fun Layout.RichParagraphTest(modifier: Modifier) {
         return currEmoji
     }
 
-    val style = TextStyle().setColor(Color.BLACK).setFontSize(30.px).setFontFamily(FontUtils.defaultFont!!.familyName)
+    val style = TextStyle().setColor(Color.BLACK).setFontSize(30.px).setFontFamily(Fonts.default.textTypeface!!.familyName)
     val paragraph = RichParagraphBuilder(style)
         .addText("文字混排测试")
         .addText("自定义文字样式", style.setColor(Color.RED).setFontSize(40.px))
@@ -382,7 +382,7 @@ fun Layout.RichParagraphTest(modifier: Modifier) {
         .addText("测试emoji自定义样式")
         .wrap()
         .addText("字体emoji")
-        .addText("😍❤️🤣😁🙌", style.setFontSize(40.px).setFontFamily(FontUtils.emojiFont!!.familyName))
+        .addText("😍❤️🤣😁🙌", style.setFontSize(40.px).setFontFamily(Fonts.default.emojiTypeface!!.familyName))
         .build()
 
     Box(modifier) {

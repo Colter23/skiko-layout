@@ -64,29 +64,35 @@ public fun Image.gradientBlurred(width: Int, height: Int, blur: GradientBlur): I
         renderCoverImage(width, height, sigma)
     }
     val surface = Surface.makeRasterN32Premul(width, height)
-    val canvas = surface.canvas
     val fullSrc = Rect.makeWH(width.toFloat(), height.toFloat())
     val fullDst = Rect.makeWH(width.toFloat(), height.toFloat())
     val geometry = GradientBlurGeometry(width.toFloat(), height.toFloat(), blur.angle)
     val stripWidth = blur.stripWidth.px.coerceAtLeast(1f)
     val sampleCount = ceil(geometry.span / stripWidth).toInt().coerceIn(2, 2048)
-    val plusPaint = Paint().apply {
-        blendMode = BlendMode.PLUS
+
+    try {
+        val canvas = surface.canvas
+        canvas.clear(Color.TRANSPARENT)
+
+        Paint().apply { blendMode = BlendMode.PLUS }.use { plusPaint ->
+            layers.forEachIndexed { index, layer ->
+                val mask = geometry.maskPaint(blur, maxBlur, index, layers.lastIndex, sampleCount)
+                mask.use {
+                    if (mask.maxAlpha <= 0f) return@use
+
+                    canvas.saveLayer(fullDst, plusPaint)
+                    canvas.drawImageRect(layer, fullSrc, fullDst, defaultImageFilterMipmap, null, false)
+                    canvas.drawRect(fullDst, mask.paint)
+                    canvas.restore()
+                }
+            }
+        }
+
+        return surface.makeImageSnapshot()
+    } finally {
+        surface.close()
+        layers.forEach { it.close() }
     }
-
-    canvas.clear(Color.TRANSPARENT)
-
-    layers.forEachIndexed { index, layer ->
-        val mask = geometry.maskPaint(blur, maxBlur, index, layers.lastIndex, sampleCount)
-        if (mask.maxAlpha <= 0f) return@forEachIndexed
-
-        canvas.saveLayer(fullDst, plusPaint)
-        canvas.drawImageRect(layer, fullSrc, fullDst, defaultImageFilterMipmap, null, false)
-        canvas.drawRect(fullDst, mask.paint)
-        canvas.restore()
-    }
-
-    return surface.makeImageSnapshot()
 }
 
 /**
@@ -109,13 +115,18 @@ private fun gradientBlurLevels(maxBlur: Float, steps: Int): List<Float> =
 private fun Image.renderCoverImage(width: Int, height: Int, sigma: Float): Image {
     val surface = Surface.makeRasterN32Premul(width, height)
     val dst = Rect.makeWH(width.toFloat(), height.toFloat())
-    val paint = if (sigma <= 0f) null else Paint().apply {
-        imageFilter = ImageFilter.makeBlur(sigma, sigma, FilterTileMode.CLAMP, null, null)
-    }
+    val blurFilter = if (sigma <= 0f) null else ImageFilter.makeBlur(sigma, sigma, FilterTileMode.CLAMP, null, null)
+    val paint = blurFilter?.let { Paint().apply { imageFilter = it } }
 
-    surface.canvas.clear(Color.TRANSPARENT)
-    surface.canvas.drawImageRect(this, coverSourceRect(width.toFloat(), height.toFloat()), dst, defaultImageFilterMipmap, paint, false)
-    return surface.makeImageSnapshot()
+    try {
+        surface.canvas.clear(Color.TRANSPARENT)
+        surface.canvas.drawImageRect(this, coverSourceRect(width.toFloat(), height.toFloat()), dst, defaultImageFilterMipmap, paint, false)
+        return surface.makeImageSnapshot()
+    } finally {
+        paint?.close()
+        blurFilter?.close()
+        surface.close()
+    }
 }
 
 private fun Image.coverSourceRect(dstWidth: Float, dstHeight: Float): Rect {
@@ -198,10 +209,16 @@ private class GradientBlurGeometry(
     private fun project(x: Float, y: Float): Float = x * dx + y * dy
 }
 
-private data class GradientBlurMask(
+private class GradientBlurMask(
     val paint: Paint,
     val maxAlpha: Float,
-)
+) : AutoCloseable {
+    // close paint 不会释放它持有的 shader，这里一并关闭
+    override fun close() {
+        paint.shader?.close()
+        paint.close()
+    }
+}
 
 
 public fun List<Layout>.sumWidth(): Dp = sumOf { boxWidth }
