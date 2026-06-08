@@ -1,7 +1,9 @@
 package top.colter.skiko
 
 import org.jetbrains.skia.*
+import top.colter.skiko.data.AxisAlignment
 import top.colter.skiko.data.GradientBlur
+import top.colter.skiko.data.LayoutAlignment
 import top.colter.skiko.data.Shadow
 import top.colter.skiko.layout.Layout
 import java.io.File
@@ -32,15 +34,23 @@ internal data class GradientBlurCacheKey(
     val width: Int,
     val height: Int,
     val blur: GradientBlur,
+    val cropAlignment: LayoutAlignment,
     val dpFactor: Float,
 )
 
-internal fun gradientBlurCacheKey(image: Image, width: Int, height: Int, blur: GradientBlur): GradientBlurCacheKey =
+internal fun gradientBlurCacheKey(
+    image: Image,
+    width: Int,
+    height: Int,
+    blur: GradientBlur,
+    cropAlignment: LayoutAlignment = LayoutAlignment.CENTER,
+): GradientBlurCacheKey =
     GradientBlurCacheKey(
         imageId = System.identityHashCode(image),
         width = width,
         height = height,
         blur = blur,
+        cropAlignment = cropAlignment,
         dpFactor = Dp.factor,
     )
 
@@ -52,16 +62,21 @@ internal fun gradientBlurTargetSize(dstRect: RRect): Pair<Int, Int> =
  *
  * 生成时会先按目标尺寸做 cover 裁剪，再按 [blur] 做线性方向的多档近似模糊。
  */
-public fun Image.gradientBlurred(width: Int, height: Int, blur: GradientBlur): Image {
+public fun Image.gradientBlurred(
+    width: Int,
+    height: Int,
+    blur: GradientBlur,
+    cropAlignment: LayoutAlignment = LayoutAlignment.CENTER,
+): Image {
     require(width > 0) { "渐变模糊输出宽度需要大于 0" }
     require(height > 0) { "渐变模糊输出高度需要大于 0" }
 
     val maxBlur = blur.maxBlur.px
-    if (maxBlur <= 0f) return renderCoverImage(width, height, 0f)
+    if (maxBlur <= 0f) return renderCoverImage(width, height, 0f, cropAlignment)
 
     val levels = gradientBlurLevels(maxBlur, blur.steps)
     val layers = levels.map { sigma ->
-        renderCoverImage(width, height, sigma)
+        renderCoverImage(width, height, sigma, cropAlignment)
     }
     val surface = Surface.makeRasterN32Premul(width, height)
     val fullSrc = Rect.makeWH(width.toFloat(), height.toFloat())
@@ -112,7 +127,12 @@ private fun gradientBlurLevels(maxBlur: Float, steps: Int): List<Float> =
         }
     }
 
-private fun Image.renderCoverImage(width: Int, height: Int, sigma: Float): Image {
+private fun Image.renderCoverImage(
+    width: Int,
+    height: Int,
+    sigma: Float,
+    cropAlignment: LayoutAlignment,
+): Image {
     val surface = Surface.makeRasterN32Premul(width, height)
     val dst = Rect.makeWH(width.toFloat(), height.toFloat())
     val blurFilter = if (sigma <= 0f) null else ImageFilter.makeBlur(sigma, sigma, FilterTileMode.CLAMP, null, null)
@@ -120,7 +140,14 @@ private fun Image.renderCoverImage(width: Int, height: Int, sigma: Float): Image
 
     try {
         surface.canvas.clear(Color.TRANSPARENT)
-        surface.canvas.drawImageRect(this, coverSourceRect(width.toFloat(), height.toFloat()), dst, defaultImageFilterMipmap, paint, false)
+        surface.canvas.drawImageRect(
+            this,
+            coverSourceRect(width.toFloat(), height.toFloat(), cropAlignment),
+            dst,
+            defaultImageFilterMipmap,
+            paint,
+            false,
+        )
         return surface.makeImageSnapshot()
     } finally {
         paint?.close()
@@ -129,15 +156,19 @@ private fun Image.renderCoverImage(width: Int, height: Int, sigma: Float): Image
     }
 }
 
-private fun Image.coverSourceRect(dstWidth: Float, dstHeight: Float): Rect {
+private fun Image.coverSourceRect(
+    dstWidth: Float,
+    dstHeight: Float,
+    cropAlignment: LayoutAlignment,
+): Rect {
     val ratio = width.toFloat() / height.toFloat()
     return if (dstWidth / ratio < dstHeight) {
         val imgW = dstWidth * height / dstHeight
-        val offsetX = (width - imgW) / 2f
+        val offsetX = cropAlignment.horizontal.cropOffset(width - imgW)
         Rect.makeXYWH(offsetX, 0f, imgW, height.toFloat())
     } else {
         val imgH = dstHeight * width / dstWidth
-        val offsetY = (height - imgH) / 2f
+        val offsetY = cropAlignment.vertical.cropOffset(height - imgH)
         Rect.makeXYWH(0f, offsetY, width.toFloat(), imgH)
     }
 }
@@ -293,22 +324,31 @@ public fun Canvas.drawImageRRect(image: Image, rRect: RRect, paint: Paint? = nul
 public fun Canvas.drawImageClip(
     image: Image,
     dstRect: RRect,
-    paint: Paint? = null
+    paint: Paint? = null,
+    cropAlignment: LayoutAlignment = LayoutAlignment.CENTER,
 ) {
     if (dstRect.width == 0f || dstRect.height == 0f) return
     val ratio = image.width.toFloat() / image.height.toFloat()
 
     val srcRect = if (dstRect.width / ratio < dstRect.height) {
         val imgW = dstRect.width * image.height / dstRect.height
-        val offsetX = (image.width - imgW) / 2f
+        val offsetX = cropAlignment.horizontal.cropOffset(image.width - imgW)
         Rect.makeXYWH(offsetX, 0f, imgW, image.height.toFloat())
     } else {
         val imgH = dstRect.height * image.width / dstRect.width
-        val offsetY = (image.height - imgH) / 2f
+        val offsetY = cropAlignment.vertical.cropOffset(image.height - imgH)
         Rect.makeXYWH(0f, offsetY, image.width.toFloat(), imgH)
     }
 
     drawImageRRect(image, srcRect, dstRect, paint)
+}
+
+private fun AxisAlignment.cropOffset(maxOffset: Float): Float {
+    return when (this) {
+        AxisAlignment.START -> 0f
+        AxisAlignment.CENTER -> maxOffset / 2f
+        AxisAlignment.END -> maxOffset
+    }.coerceIn(0f, maxOffset.coerceAtLeast(0f))
 }
 
 /**

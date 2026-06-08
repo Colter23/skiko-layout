@@ -18,6 +18,7 @@ import top.colter.skiko.data.place
  * @param ratio 宽高比
  * @param modifier 样式
  * @param alignment 对齐
+ * @param cropAlignment cover 裁剪图片时源图的取景位置，默认为居中裁剪
  */
 public fun Layout.Image(
     image: Image,
@@ -26,6 +27,7 @@ public fun Layout.Image(
     alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     alpha: Float = 1f,
     gradientBlur: GradientBlur? = null,
+    cropAlignment: LayoutAlignment = LayoutAlignment.CENTER,
 ) {
     require(alpha in 0f..1f) { "图片透明度需在 0..1 之间" }
     Layout(
@@ -35,6 +37,7 @@ public fun Layout.Image(
             alignment = alignment,
             alpha = alpha,
             gradientBlur = gradientBlur,
+            cropAlignment = cropAlignment,
             modifier = modifier,
             parentLayout = this
         ),
@@ -50,6 +53,7 @@ public class ImageLayout(
     fontRegistry: FontRegistry = parentLayout?.fontRegistry ?: Fonts.default,
     public val alpha: Float = 1f,
     public val gradientBlur: GradientBlur? = null,
+    public val cropAlignment: LayoutAlignment = LayoutAlignment.CENTER,
 ) : Layout(modifier, parentLayout, fontRegistry) {
     init {
         require(alpha in 0f..1f) { "图片透明度需在 0..1 之间" }
@@ -190,14 +194,14 @@ public class ImageLayout(
     override fun draw(canvas: Canvas) {
         drawBgBox(canvas) {
             if (gradientBlur == null) {
-                drawImageClip(image, it, imageAlphaPaint(alpha))
+                drawImageClip(image, it, imageAlphaPaint(alpha), cropAlignment)
             } else {
                 val (targetWidth, targetHeight) = gradientBlurTargetSize(it)
-                val key = gradientBlurCacheKey(image, targetWidth, targetHeight, gradientBlur)
+                val key = gradientBlurCacheKey(image, targetWidth, targetHeight, gradientBlur, cropAlignment)
                 val blurredImage = if (cachedGradientBlurKey == key && cachedGradientBlurImage != null) {
                     cachedGradientBlurImage!!
                 } else {
-                    image.gradientBlurred(targetWidth, targetHeight, gradientBlur).also { result ->
+                    image.gradientBlurred(targetWidth, targetHeight, gradientBlur, cropAlignment).also { result ->
                         cachedGradientBlurKey = key
                         cachedGradientBlurImage = result
                     }
