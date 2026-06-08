@@ -196,8 +196,8 @@ internal class DrawTest {
 
         val wrappedOnce = paragraph.layout(180f, 1)
         val wrappedTwice = paragraph.layout(180f, 2)
-        assertEquals(1, wrappedOnce.lines.size)
-        assertEquals(2, wrappedTwice.lines.size)
+        assertEquals(1, wrappedOnce.lineCount)
+        assertEquals(2, wrappedTwice.lineCount)
 
         val root = measureRoot(
             Modifier().width(1000.dp).height(260.dp)
@@ -214,6 +214,35 @@ internal class DrawTest {
 
         assertEquals(32f, padded.width.px - plain.width.px, 0.01f)
         assertEquals(32f, padded.height.px - plain.height.px, 0.01f)
+    }
+
+    @Test
+    fun `regression rich text layout keeps measured lines inside width`() {
+        val emoji = solidImage(64, 64, Color.YELLOW)
+        val style = TextStyle()
+            .setColor(Color.BLACK)
+            .setFontSize(32f)
+            .setFontFamily(Fonts.default.textTypeface!!.familyName)
+        val linkStyle = TextStyle()
+            .setColor(Color.BLUE)
+            .setFontSize(32f)
+            .setFontFamily(Fonts.default.textTypeface!!.familyName)
+
+        val paragraph = RichParagraphBuilder(style)
+            .addText("这是一段用于复现右侧裁切的中文长文本，多个字在最右侧竖直平齐时也不应该被内容裁剪整齐切掉。")
+            .addEmoji("[热词系列_知识增加]", emoji, style)
+            .addText(" 链接文字和普通文字混排后仍然必须使用同一套测量和绘制宽度。", linkStyle)
+            .build()
+        val width = 360f
+        val layout = paragraph.layout(width, maxLinesCount = 20)
+
+        assertTrue(layout.width <= width + 0.01f)
+        layout.lineMetrics.forEach {
+            assertTrue(it.right <= width + 0.01f, "line right ${it.right} exceeds $width")
+        }
+        layout.placeholders.forEach {
+            assertTrue(it.rect.right <= width + 0.01f, "placeholder right ${it.rect.right} exceeds $width")
+        }
     }
 
     @Test
