@@ -17,11 +17,23 @@ import top.colter.skiko.toDp
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
+/**
+ * 自适应字号候选。
+ *
+ * [fontSize] 是当前候选字号，[layout] 是使用该字号完成 Skia Paragraph 排版后的结果。
+ * 选择器可以根据行数、行宽、是否超出最大行数等信息决定最终使用哪个候选。
+ */
 public data class RichTextFontSizeCandidate(
     public val fontSize: Dp,
     public val layout: RichParagraphLayout,
 )
 
+/**
+ * 自定义自适应字号选择器。
+ *
+ * [candidates] 会按字号从大到小生成，并且包含最小字号候选。
+ * [contentWidth] 是富文本实际参与排版的内容宽度，单位为 px。
+ */
 public fun interface RichTextFontSizeSelector {
     public fun select(
         candidates: List<RichTextFontSizeCandidate>,
@@ -29,15 +41,25 @@ public fun interface RichTextFontSizeSelector {
     ): RichTextFontSizeCandidate
 }
 
+/**
+ * 默认的均衡字号选择器。
+ *
+ * 选择策略偏向视觉稳定：先排除已经超出 [AutoSizeRichText] 最大行数限制的候选；
+ * 如果存在单行可展示的最大字号，直接使用最大字号；否则综合比较非最后一行的平均填充度、
+ * 最差填充度、行间填充差异和字号大小，尽量减少右侧大块留白，同时避免字号过小。
+ */
 public object BalancedRichTextFontSizeSelector : RichTextFontSizeSelector {
     override fun select(
         candidates: List<RichTextFontSizeCandidate>,
         contentWidth: Float,
     ): RichTextFontSizeCandidate {
+        val selectableCandidates = candidates
+            .filter { !it.layout.didExceedMaxLines }
+            .ifEmpty { candidates }
         var minFontSize = Float.MAX_VALUE
         var maxFontSize = Float.MIN_VALUE
-        var largest = candidates.first()
-        candidates.forEach { candidate ->
+        var largest = selectableCandidates.first()
+        selectableCandidates.forEach { candidate ->
             val fontSize = candidate.fontSize.px
             if (fontSize < minFontSize) minFontSize = fontSize
             if (fontSize > maxFontSize) {
@@ -45,12 +67,12 @@ public object BalancedRichTextFontSizeSelector : RichTextFontSizeSelector {
                 largest = candidate
             }
         }
-        if (contentWidth <= 0f || largest.layout.lineCount <= 1) return largest
+        if (contentWidth <= 0f || (largest.layout.lineCount <= 1 && !largest.layout.didExceedMaxLines)) return largest
 
         val fontRange = (maxFontSize - minFontSize).coerceAtLeast(1f)
         var best = largest
         var bestScore = visualScore(largest, minFontSize, fontRange, contentWidth)
-        candidates.forEach { candidate ->
+        selectableCandidates.forEach { candidate ->
             val score = visualScore(candidate, minFontSize, fontRange, contentWidth)
             if (score > bestScore || score == bestScore && candidate.fontSize.px > best.fontSize.px) {
                 best = candidate
@@ -117,6 +139,16 @@ public object BalancedRichTextFontSizeSelector : RichTextFontSizeSelector {
     )
 }
 
+/**
+ * 自适应字号富文本。
+ *
+ * 该组件会在 [minFontSize] 到 [maxFontSize] 之间按 [fontSizeStep] 全量生成候选字号，
+ * 每个候选都会调用 [paragraph] 重新构建并排版。最终字号由 [fontSizeSelector] 决定。
+ *
+ * 常用于动态正文、标题等需要“短文本放大、长文本缩小”的场景。为了保证视觉结果稳定，
+ * 默认实现不使用粗排/细排等启发式搜索；如果调用方更关注性能，可以适当调大
+ * [fontSizeStep]，减少参与排版的候选数量。
+ */
 public fun Layout.AutoSizeRichText(
     minFontSize: Dp,
     maxFontSize: Dp,
@@ -145,6 +177,11 @@ public fun Layout.AutoSizeRichText(
     )
 }
 
+/**
+ * [AutoSizeRichText] 的实际布局节点。
+ *
+ * 测量时会根据可用宽度缓存最终选中的 [RichParagraphLayout]，同一宽度重复测量不会再次排版。
+ */
 public class AutoSizeRichTextLayout(
     public val minFontSize: Dp,
     public val maxFontSize: Dp,
@@ -166,8 +203,8 @@ public class AutoSizeRichTextLayout(
     private var layoutWidthPx: Float = -1f
 
     init {
-        require(minFontSize <= maxFontSize) { "minFontSize require <= maxFontSize" }
-        require(fontSizeStep > 0.dp) { "fontSizeStep require > 0" }
+        require(minFontSize <= maxFontSize) { "minFontSize 需要小于等于 maxFontSize" }
+        require(fontSizeStep > 0.dp) { "fontSizeStep 需要大于 0" }
     }
 
     private fun resolveParagraph(widthPx: Float): RichParagraphLayout {
@@ -192,6 +229,7 @@ public class AutoSizeRichTextLayout(
         var minIncluded = false
         var lastKey: Int? = null
 
+        // 从最大字号开始扫描，优先保留大字号候选；浮点误差导致的重复字号用 key 去重。
         while (current >= minPx - FONT_SIZE_EPSILON) {
             val fontPx = current.coerceAtLeast(minPx)
             val key = (fontPx * 100).roundToInt()
@@ -202,6 +240,7 @@ public class AutoSizeRichTextLayout(
             }
             current -= stepPx
         }
+        // 当步长不能整除字号范围时，显式补上最小字号，保证始终有兜底候选。
         if (!minIncluded) {
             result.add(minPx.toDp().toCandidate(widthPx))
         }

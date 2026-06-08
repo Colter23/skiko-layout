@@ -349,6 +349,33 @@ val style = TextStyle()
     )
 ```
 
+### 自适应字号富文本
+
+`AutoSizeRichText` 会在最小字号和最大字号之间按步长生成候选，并对每个候选重新排版。
+默认选择器会优先避开超过 `maxLinesCount` 的候选；当文本可以单行显示时使用较大字号，
+多行时会综合行宽填充度和字号大小，减少右侧大块留白。
+
+适合动态正文、标题等“字数少时放大、字数多时缩小”的场景。为了保证视觉结果稳定，
+默认实现会全量测量候选字号，不做粗排/细排启发式搜索；如果更关注性能，可以适当调大
+`fontSizeStep`。
+
+```kotlin
+AutoSizeRichText(
+    minFontSize = 30.dp,
+    maxFontSize = 48.dp,
+    fontSizeStep = 0.5.dp,
+    maxLinesCount = 8,
+    modifier = Modifier().fillMaxWidth(),
+) { fontSize ->
+    val style = TextStyle()
+        .setColor(Color.BLACK)
+        .setFontSize(fontSize.px)
+    RichParagraphBuilder(style)
+        .addText("这是一段会根据内容和宽度自动选择字号的中文动态正文。")
+        .build()
+}
+```
+
 ### 富文本构建器
 ```kotlin
 fun Layout.RichParagraphTest(modifier: Modifier) {
