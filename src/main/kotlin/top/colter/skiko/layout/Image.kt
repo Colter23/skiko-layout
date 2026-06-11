@@ -26,16 +26,20 @@ public fun Layout.Image(
     modifier: Modifier = Modifier(),
     alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     alpha: Float = 1f,
+    blur: Dp = 0.dp,
     gradientBlur: GradientBlur? = null,
     cropAlignment: LayoutAlignment = LayoutAlignment.CENTER,
 ) {
     require(alpha in 0f..1f) { "图片透明度需在 0..1 之间" }
+    require(blur >= 0.dp) { "图片模糊半径需大于等于 0" }
+    require(blur == 0.dp || gradientBlur == null) { "图片统一模糊和渐变模糊不能同时设置" }
     Layout(
         layout = ImageLayout(
             image = image,
             ratio = ratio,
             alignment = alignment,
             alpha = alpha,
+            blur = blur,
             gradientBlur = gradientBlur,
             cropAlignment = cropAlignment,
             modifier = modifier,
@@ -52,13 +56,18 @@ public class ImageLayout(
     parentLayout: Layout?,
     fontRegistry: FontRegistry = parentLayout?.fontRegistry ?: Fonts.default,
     public val alpha: Float = 1f,
+    public val blur: Dp = 0.dp,
     public val gradientBlur: GradientBlur? = null,
     public val cropAlignment: LayoutAlignment = LayoutAlignment.CENTER,
 ) : Layout(modifier, parentLayout, fontRegistry) {
     init {
         require(alpha in 0f..1f) { "图片透明度需在 0..1 之间" }
+        require(blur >= 0.dp) { "图片模糊半径需大于等于 0" }
+        require(blur == 0.dp || gradientBlur == null) { "图片统一模糊和渐变模糊不能同时设置" }
     }
 
+    private var cachedBlurKey: ImageBlurCacheKey? = null
+    private var cachedBlurImage: Image? = null
     private var cachedGradientBlurKey: GradientBlurCacheKey? = null
     private var cachedGradientBlurImage: Image? = null
 
@@ -193,20 +202,38 @@ public class ImageLayout(
 
     override fun draw(canvas: Canvas) {
         drawBgBox(canvas) {
-            if (gradientBlur == null) {
-                drawImageClip(image, it, imageAlphaPaint(alpha), cropAlignment)
-            } else {
-                val (targetWidth, targetHeight) = gradientBlurTargetSize(it)
-                val key = gradientBlurCacheKey(image, targetWidth, targetHeight, gradientBlur, cropAlignment)
-                val blurredImage = if (cachedGradientBlurKey == key && cachedGradientBlurImage != null) {
-                    cachedGradientBlurImage!!
-                } else {
-                    image.gradientBlurred(targetWidth, targetHeight, gradientBlur, cropAlignment).also { result ->
-                        cachedGradientBlurKey = key
-                        cachedGradientBlurImage = result
+            when {
+                gradientBlur != null -> {
+                    val (targetWidth, targetHeight) = gradientBlurTargetSize(it)
+                    val key = gradientBlurCacheKey(image, targetWidth, targetHeight, gradientBlur, cropAlignment)
+                    val blurredImage = if (cachedGradientBlurKey == key && cachedGradientBlurImage != null) {
+                        cachedGradientBlurImage!!
+                    } else {
+                        image.gradientBlurred(targetWidth, targetHeight, gradientBlur, cropAlignment).also { result ->
+                            cachedGradientBlurImage?.close()
+                            cachedGradientBlurKey = key
+                            cachedGradientBlurImage = result
+                        }
                     }
+                    drawImageRRect(blurredImage, it, imageAlphaPaint(alpha))
                 }
-                drawImageRRect(blurredImage, it, imageAlphaPaint(alpha))
+                blur > 0.dp -> {
+                    val (targetWidth, targetHeight) = gradientBlurTargetSize(it)
+                    val key = imageBlurCacheKey(image, targetWidth, targetHeight, blur, cropAlignment)
+                    val blurredImage = if (cachedBlurKey == key && cachedBlurImage != null) {
+                        cachedBlurImage!!
+                    } else {
+                        image.blurred(targetWidth, targetHeight, blur, cropAlignment).also { result ->
+                            cachedBlurImage?.close()
+                            cachedBlurKey = key
+                            cachedBlurImage = result
+                        }
+                    }
+                    drawImageRRect(blurredImage, it, imageAlphaPaint(alpha))
+                }
+                else -> {
+                    drawImageClip(image, it, imageAlphaPaint(alpha), cropAlignment)
+                }
             }
         }
     }

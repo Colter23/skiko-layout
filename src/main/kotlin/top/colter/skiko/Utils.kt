@@ -29,6 +29,42 @@ internal fun imageAlphaPaint(alpha: Float): Paint? {
     return if (alpha == 1f) null else Paint().setAlphaf(alpha)
 }
 
+@PublishedApi
+internal fun writeEncodedImage(file: File, image: Image) {
+    file.parentFile?.mkdirs()
+    val data = image.encodeToData() ?: error("图片编码失败")
+    try {
+        file.writeBytes(data.bytes)
+    } finally {
+        data.close()
+    }
+}
+
+internal data class ImageBlurCacheKey(
+    val imageId: Int,
+    val width: Int,
+    val height: Int,
+    val blur: Dp,
+    val cropAlignment: LayoutAlignment,
+    val dpFactor: Float,
+)
+
+internal fun imageBlurCacheKey(
+    image: Image,
+    width: Int,
+    height: Int,
+    blur: Dp,
+    cropAlignment: LayoutAlignment = LayoutAlignment.CENTER,
+): ImageBlurCacheKey =
+    ImageBlurCacheKey(
+        imageId = System.identityHashCode(image),
+        width = width,
+        height = height,
+        blur = blur,
+        cropAlignment = cropAlignment,
+        dpFactor = Dp.factor,
+    )
+
 internal data class GradientBlurCacheKey(
     val imageId: Int,
     val width: Int,
@@ -56,6 +92,42 @@ internal fun gradientBlurCacheKey(
 
 internal fun gradientBlurTargetSize(dstRect: RRect): Pair<Int, Int> =
     ceil(dstRect.width).toInt().coerceAtLeast(1) to ceil(dstRect.height).toInt().coerceAtLeast(1)
+
+/**
+ * 预生成整张图片统一模糊结果。
+ *
+ * 生成时会先按目标尺寸做 cover 裁剪，再对整张图做一次 Skia 模糊。
+ */
+public fun Image.blurred(
+    width: Int,
+    height: Int,
+    blur: Dp,
+    cropAlignment: LayoutAlignment = LayoutAlignment.CENTER,
+): Image {
+    require(width > 0) { "图片模糊输出宽度需要大于 0" }
+    require(height > 0) { "图片模糊输出高度需要大于 0" }
+    require(blur >= 0.dp) { "图片模糊半径需大于等于 0" }
+
+    return renderCoverImage(width, height, blur.px, cropAlignment)
+}
+
+/**
+ * 预生成整张图片统一模糊结果并写入文件。
+ */
+public fun Image.writeBlurred(
+    file: File,
+    width: Int,
+    height: Int,
+    blur: Dp,
+    cropAlignment: LayoutAlignment = LayoutAlignment.CENTER,
+): Unit {
+    val image = blurred(width, height, blur, cropAlignment)
+    try {
+        writeEncodedImage(file, image)
+    } finally {
+        image.close()
+    }
+}
 
 /**
  * 预生成图片渐变模糊结果。
@@ -114,8 +186,12 @@ public fun Image.gradientBlurred(
  * 预生成图片渐变模糊结果并写入文件。
  */
 public fun Image.writeGradientBlurred(file: File, width: Int, height: Int, blur: GradientBlur): Unit {
-    file.parentFile?.mkdirs()
-    file.writeBytes(gradientBlurred(width, height, blur).encodeToData()!!.bytes)
+    val image = gradientBlurred(width, height, blur)
+    try {
+        writeEncodedImage(file, image)
+    } finally {
+        image.close()
+    }
 }
 
 private fun gradientBlurLevels(maxBlur: Float, steps: Int): List<Float> =

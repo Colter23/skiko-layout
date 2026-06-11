@@ -103,6 +103,81 @@ internal class GradientBlurTest {
     }
 
     @Test
+    fun `预生成整图模糊会降低整体条纹对比度`() {
+        val source = verticalStripeImage(160, 80)
+        val original = imageToBuffered(source)
+        val result = imageToBuffered(source.blurred(160, 80, 8.dp))
+
+        val originalContrast = horizontalContrast(original, 20, 140, 20, 60)
+        val blurredContrast = horizontalContrast(result, 20, 140, 20, 60)
+
+        assertTrue(originalContrast > blurredContrast * 3.0, "整图模糊应显著降低整张图的条纹对比度")
+    }
+
+    @Test
+    fun `普通 Image 支持运行时整图模糊`() {
+        val source = verticalStripeImage(160, 80)
+        val root = measureRoot(Modifier().width(160.dp).height(80.dp)) {
+            Image(
+                image = source,
+                modifier = Modifier().width(160.dp).height(80.dp),
+                blur = 8.dp
+            )
+        }
+
+        val result = renderRoot(root)
+        val layout = root.child.single() as ImageLayout
+        val blurredContrast = horizontalContrast(result, 20, 140, 20, 60)
+
+        assertEquals(160f, layout.width.px, 0.01f)
+        assertTrue(blurredContrast < 40.0, "Image 运行时整图模糊应降低整张图的条纹对比度")
+    }
+
+    @Test
+    fun `背景图支持运行时整图模糊`() {
+        val source = verticalStripeImage(160, 80)
+        val root = measureRoot(
+            Modifier().width(160.dp).height(80.dp).background(
+                image = source,
+                imageBlur = 8.dp
+            )
+        ) { }
+
+        val result = renderRoot(root)
+        val blurredContrast = horizontalContrast(result, 20, 140, 20, 60)
+
+        assertTrue(blurredContrast < 40.0, "背景图运行时整图模糊应降低整张图的条纹对比度")
+    }
+
+    @Test
+    fun `背景图整图模糊仍先于颜色遮罩绘制`() {
+        val root = measureRoot(
+            Modifier()
+                .width(20.dp)
+                .height(20.dp)
+                .background(
+                    color = Color.BLACK.withAlpha(0.5f),
+                    image = solidImage(20, 20, Color.BLUE),
+                    imageBlur = 4.dp
+                )
+        ) { }
+
+        val pixel = renderRoot(root).getRGB(10, 10)
+
+        assertTrue(blueOf(pixel) in 120..135)
+    }
+
+    @Test
+    fun `整图模糊可以预生成并写入文件`() {
+        val source = verticalStripeImage(40, 20)
+        val file = File("build/test-output/image-blur/pre-rendered.png")
+
+        source.writeBlurred(file, 40, 20, 4.dp)
+
+        assertTrue(file.exists() && file.length() > 0)
+    }
+
+    @Test
     fun `预生成 edge 渐变模糊让两侧更模糊中间保持清晰`() {
         val source = verticalStripeImage(160, 80)
         val result = imageToBuffered(
@@ -234,6 +309,30 @@ internal class GradientBlurTest {
 
     @Test
     fun `渐变模糊参数校验`() {
+        val source = solidImage(20, 20, Color.BLUE)
+
+        assertThrows(IllegalArgumentException::class.java) {
+            source.blurred(0, 20, 4.dp)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            source.blurred(20, 20, (-1).dp)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            measureRoot(Modifier().width(20.dp).height(20.dp)) {
+                Image(image = source, blur = (-1).dp)
+            }
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            measureRoot(Modifier().width(20.dp).height(20.dp)) {
+                Image(image = source, blur = 4.dp, gradientBlur = GradientBlur.edge(4.dp))
+            }
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            Modifier().background(image = source, imageBlur = (-1).dp)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            Modifier().background(image = source, imageBlur = 4.dp, imageGradientBlur = GradientBlur.edge(4.dp))
+        }
         assertThrows(IllegalArgumentException::class.java) {
             GradientBlur(stops = listOf(GradientBlurStop(0f, 0.dp)))
         }

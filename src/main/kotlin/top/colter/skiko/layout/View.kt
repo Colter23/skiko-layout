@@ -5,6 +5,7 @@ import org.jetbrains.skia.Surface
 import top.colter.skiko.FontRegistry
 import top.colter.skiko.Fonts
 import top.colter.skiko.Modifier
+import top.colter.skiko.writeEncodedImage
 import top.colter.skiko.data.LayoutAlignment
 import java.io.File
 
@@ -45,7 +46,11 @@ public inline fun View(
     content: BoxLayout.() -> Unit
 ) {
     val image = View(modifier, alignment, fontRegistry, content)
-    file.writeBytes(image.encodeToData()!!.bytes)
+    try {
+        writeEncodedImage(file, image)
+    } finally {
+        image.close()
+    }
 }
 
 /**
@@ -86,5 +91,9 @@ public inline fun View(
         layout.draw(canvas)
     }
 
-    return surface.makeImageSnapshot()
+    try {
+        return surface.makeImageSnapshot()
+    } finally {
+        surface.close()
+    }
 }

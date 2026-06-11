@@ -88,6 +88,8 @@ public abstract class Layout(
         isAntiAlias = true
     }
     internal val drawCornerRadii: FloatArray = FloatArray(4)
+    internal var backgroundImageBlurCacheKey: ImageBlurCacheKey? = null
+    internal var backgroundImageBlurCacheImage: Image? = null
     internal var backgroundGradientBlurCacheKey: GradientBlurCacheKey? = null
     internal var backgroundGradientBlurCacheImage: Image? = null
 
@@ -348,21 +350,44 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
 
         // 绘制背景图片
         if (bg.image != null) {
-            if (bg.imageGradientBlur == null) {
-                canvas.drawImageClip(bg.image, rrect, imageAlphaPaint(bg.imageAlpha))
-            } else {
-                val (targetWidth, targetHeight) = gradientBlurTargetSize(rrect)
-                val key = gradientBlurCacheKey(bg.image, targetWidth, targetHeight, bg.imageGradientBlur)
-                val blurredImage = if (backgroundGradientBlurCacheKey == key && backgroundGradientBlurCacheImage != null) {
-                    backgroundGradientBlurCacheImage!!
-                } else {
-                    bg.image.gradientBlurred(targetWidth, targetHeight, bg.imageGradientBlur).also {
-                        backgroundGradientBlurCacheKey = key
-                        backgroundGradientBlurCacheImage = it
+            when {
+                bg.imageGradientBlur != null -> {
+                    clearBackgroundImageBlurCache()
+                    val (targetWidth, targetHeight) = gradientBlurTargetSize(rrect)
+                    val key = gradientBlurCacheKey(bg.image, targetWidth, targetHeight, bg.imageGradientBlur)
+                    val blurredImage = if (backgroundGradientBlurCacheKey == key && backgroundGradientBlurCacheImage != null) {
+                        backgroundGradientBlurCacheImage!!
+                    } else {
+                        bg.image.gradientBlurred(targetWidth, targetHeight, bg.imageGradientBlur).also {
+                            backgroundGradientBlurCacheImage?.close()
+                            backgroundGradientBlurCacheKey = key
+                            backgroundGradientBlurCacheImage = it
+                        }
                     }
+                    canvas.drawImageRRect(blurredImage, rrect, imageAlphaPaint(bg.imageAlpha))
                 }
-                canvas.drawImageRRect(blurredImage, rrect, imageAlphaPaint(bg.imageAlpha))
+                bg.imageBlur > 0.dp -> {
+                    clearBackgroundGradientBlurCache()
+                    val (targetWidth, targetHeight) = gradientBlurTargetSize(rrect)
+                    val key = imageBlurCacheKey(bg.image, targetWidth, targetHeight, bg.imageBlur)
+                    val blurredImage = if (backgroundImageBlurCacheKey == key && backgroundImageBlurCacheImage != null) {
+                        backgroundImageBlurCacheImage!!
+                    } else {
+                        bg.image.blurred(targetWidth, targetHeight, bg.imageBlur).also {
+                            backgroundImageBlurCacheImage?.close()
+                            backgroundImageBlurCacheKey = key
+                            backgroundImageBlurCacheImage = it
+                        }
+                    }
+                    canvas.drawImageRRect(blurredImage, rrect, imageAlphaPaint(bg.imageAlpha))
+                }
+                else -> {
+                    clearBackgroundImageCaches()
+                    canvas.drawImageClip(bg.image, rrect, imageAlphaPaint(bg.imageAlpha))
+                }
             }
+        } else {
+            clearBackgroundImageCaches()
         }
 
         // 绘制渐变色
@@ -420,6 +445,8 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
             })
         }
 
+    } else {
+        clearBackgroundImageCaches()
     }
 
     // 绘制内容
@@ -484,4 +511,19 @@ private fun Layout.resolveCornerRadius(border: Border?): FloatArray {
     return radius
 }
 
+private fun Layout.clearBackgroundImageCaches() {
+    clearBackgroundImageBlurCache()
+    clearBackgroundGradientBlurCache()
+}
 
+private fun Layout.clearBackgroundImageBlurCache() {
+    backgroundImageBlurCacheImage?.close()
+    backgroundImageBlurCacheKey = null
+    backgroundImageBlurCacheImage = null
+}
+
+private fun Layout.clearBackgroundGradientBlurCache() {
+    backgroundGradientBlurCacheImage?.close()
+    backgroundGradientBlurCacheKey = null
+    backgroundGradientBlurCacheImage = null
+}
