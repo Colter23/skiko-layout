@@ -63,6 +63,26 @@ internal class DrawTest {
         return ImageIO.read(ByteArrayInputStream(surface.makeImageSnapshot().encodeToData()!!.bytes))
     }
 
+    private fun measureTextLayout(
+        modifier: Modifier = Modifier(),
+        stroke: TextStroke? = null,
+        textShadows: List<TextShadow> = emptyList(),
+    ): TextLayout {
+        val root = measureRoot(
+            Modifier().width(2000.dp).height(500.dp)
+        ) {
+            Text(
+                text = "TEXT",
+                color = Color.WHITE,
+                fontSize = 54.dp,
+                modifier = modifier,
+                stroke = stroke,
+                textShadows = textShadows
+            )
+        }
+        return root.child.single() as TextLayout
+    }
+
     private fun alphaOf(argb: Int): Int = argb ushr 24 and 0xFF
     private fun redOf(argb: Int): Int = argb ushr 16 and 0xFF
     private fun greenOf(argb: Int): Int = argb ushr 8 and 0xFF
@@ -87,6 +107,9 @@ internal class DrawTest {
 
     private fun isWhiteDominant(argb: Int): Boolean =
         alphaOf(argb) > 0 && redOf(argb) > 180 && greenOf(argb) > 180 && blueOf(argb) > 180
+
+    private fun isBlackDominant(argb: Int): Boolean =
+        alphaOf(argb) > 0 && redOf(argb) < 60 && greenOf(argb) < 60 && blueOf(argb) < 60
 
     @BeforeAll
     fun init() {
@@ -312,6 +335,82 @@ internal class DrawTest {
 
         assertTrue(countPixels(image, ::isRedDominant) > 30)
         assertTrue(countPixels(image, ::isWhiteDominant) > 30)
+    }
+
+    @Test
+    fun `粗描边不会盖住文字阴影`() {
+        val root = measureRoot(
+            Modifier().width(360.dp).height(190.dp)
+        ) {
+            Text(
+                text = "EDGE",
+                color = Color.WHITE,
+                fontSize = 64.dp,
+                stroke = TextStroke(28.dp, Color.BLACK),
+                textShadows = listOf(
+                    TextShadow(
+                        offsetX = 6.dp,
+                        offsetY = 6.dp,
+                        blur = 6.dp,
+                        color = Color.RED
+                    )
+                )
+            )
+        }
+
+        val image = renderRoot(root)
+
+        val redPixels = countPixels(image, ::isRedDominant)
+        assertTrue(redPixels > 30, "红色阴影像素不足: $redPixels")
+        assertTrue(countPixels(image, ::isBlackDominant) > 30)
+        assertTrue(countPixels(image, ::isWhiteDominant) > 30)
+    }
+
+    @Test
+    fun `文字效果尺寸计算匹配视觉外扩`() {
+        val plain = measureTextLayout()
+
+        val strokeOnly = measureTextLayout(stroke = TextStroke(6.dp, Color.RED))
+        assertEquals(plain.width.px + 12f, strokeOnly.width.px, 0.1f)
+        assertEquals(plain.height.px + 12f, strokeOnly.height.px, 0.1f)
+
+        val shadowOnly = measureTextLayout(
+            textShadows = listOf(
+                TextShadow(
+                    offsetX = 10.dp,
+                    offsetY = 8.dp,
+                    color = Color.RED
+                )
+            )
+        )
+        assertEquals(plain.width.px + 10f, shadowOnly.width.px, 0.1f)
+        assertEquals(plain.height.px + 8f, shadowOnly.height.px, 0.1f)
+
+        val strokeAndShadow = measureTextLayout(
+            stroke = TextStroke(20.dp, Color.BLACK),
+            textShadows = listOf(
+                TextShadow(
+                    blur = 3.dp,
+                    color = Color.RED
+                )
+            )
+        )
+        assertEquals(plain.width.px + 58f, strokeAndShadow.width.px, 0.1f)
+        assertEquals(plain.height.px + 58f, strokeAndShadow.height.px, 0.1f)
+
+        val fixedSize = measureTextLayout(
+            modifier = Modifier().width(180.dp).height(90.dp),
+            stroke = TextStroke(20.dp, Color.BLACK),
+            textShadows = listOf(
+                TextShadow(
+                    offsetX = 16.dp,
+                    blur = 3.dp,
+                    color = Color.RED
+                )
+            )
+        )
+        assertEquals(180f, fixedSize.width.px, 0.01f)
+        assertEquals(90f, fixedSize.height.px, 0.01f)
     }
 
     @Test

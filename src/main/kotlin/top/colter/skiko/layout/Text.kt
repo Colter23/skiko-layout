@@ -107,6 +107,7 @@ public class TextLayout(
 
     private var cachedFillParagraph: Paragraph? = null
     private var cachedStrokeParagraph: Paragraph? = null
+    private var cachedShadowParagraphs: List<TextShadowParagraph> = emptyList()
     private var cachedFillNoShadowParagraph: Paragraph? = null
     private var layoutWidthPx: Float = -1f
 
@@ -136,6 +137,28 @@ public class TextLayout(
         }
     }
 
+    private fun fillShadowTextStyle(color: Int): TextStyle =
+        textStyle.copyStyle().apply {
+            clearShadows()
+            setForeground(Paint().apply {
+                this.color = color
+                isAntiAlias = true
+            })
+        }
+
+    private fun strokeShadowTextStyle(stroke: TextStroke, color: Int): TextStyle {
+        val strokePaint = Paint().apply {
+            this.color = color
+            mode = PaintMode.STROKE
+            strokeWidth = stroke.width.px
+            isAntiAlias = true
+        }
+        return textStyle.copyStyle().apply {
+            clearShadows()
+            setForeground(strokePaint)
+        }
+    }
+
     private fun fillTextStyleWithoutShadows(): TextStyle =
         textStyle.copyStyle().apply { clearShadows() }
 
@@ -145,9 +168,24 @@ public class TextLayout(
         if (cached != null && layoutWidthPx == safeWidth) return cached
 
         val paragraph = buildParagraph(textStyle, safeWidth)
+        val hasStrokeAndShadows = stroke != null && textStyle.shadows.isNotEmpty()
         cachedFillParagraph = paragraph
         cachedStrokeParagraph = stroke?.let { buildParagraph(strokeTextStyle(it), safeWidth) }
-        cachedFillNoShadowParagraph = if (stroke != null && textStyle.shadows.isNotEmpty()) {
+        cachedShadowParagraphs = if (hasStrokeAndShadows) {
+            val effectStroke = stroke
+            textStyle.shadows.map {
+                TextShadowParagraph(
+                    shadow = it,
+                    fill = buildParagraph(fillShadowTextStyle(it.color), safeWidth),
+                    stroke = if (effectStroke.width.px > 0f)
+                        buildParagraph(strokeShadowTextStyle(effectStroke, it.color), safeWidth)
+                    else null,
+                )
+            }
+        } else {
+            emptyList()
+        }
+        cachedFillNoShadowParagraph = if (hasStrokeAndShadows) {
             buildParagraph(fillTextStyleWithoutShadows(), safeWidth)
         } else {
             null
@@ -205,7 +243,9 @@ public class TextLayout(
                 return@drawBgBox
             }
 
-            if (textStyle.shadows.isNotEmpty()) fillParagraph.paint(canvas, x, y)
+            cachedShadowParagraphs.forEach { shadowParagraph ->
+                shadowParagraph.paint(canvas, it, x, y)
+            }
             cachedStrokeParagraph?.paint(canvas, x, y)
             (cachedFillNoShadowParagraph ?: fillParagraph).paint(canvas, x, y)
         }
@@ -238,6 +278,36 @@ private data class TextVisualOutset(
     val vertical: Float get() = top + bottom
 }
 
+private data class TextShadowParagraph(
+    val shadow: org.jetbrains.skia.paragraph.Shadow,
+    val fill: Paragraph,
+    val stroke: Paragraph?,
+) {
+    fun paint(canvas: Canvas, bounds: RRect, x: Float, y: Float) {
+        val shadowX = x + shadow.offsetX
+        val shadowY = y + shadow.offsetY
+        val blur = shadow.blurSigma.toFloat()
+
+        if (blur <= 0f) {
+            fill.paint(canvas, shadowX, shadowY)
+            stroke?.paint(canvas, shadowX, shadowY)
+            return
+        }
+
+        val filter = ImageFilter.makeBlur(blur, blur, FilterTileMode.CLAMP, null, null)
+        val paint = Paint().apply { imageFilter = filter }
+        try {
+            canvas.saveLayer(Rect.makeLTRB(bounds.left, bounds.top, bounds.right, bounds.bottom), paint)
+            fill.paint(canvas, shadowX, shadowY)
+            stroke?.paint(canvas, shadowX, shadowY)
+            canvas.restore()
+        } finally {
+            paint.close()
+            filter.close()
+        }
+    }
+}
+
 private fun textVisualOutset(
     stroke: TextStroke?,
     shadows: Array<org.jetbrains.skia.paragraph.Shadow>,
@@ -250,10 +320,12 @@ private fun textVisualOutset(
 
     shadows.forEach {
         val blurOutset = it.blurSigma.toFloat() * 3f
-        left = max(left, (blurOutset - it.offsetX).coerceAtLeast(0f))
-        top = max(top, (blurOutset - it.offsetY).coerceAtLeast(0f))
-        right = max(right, (blurOutset + it.offsetX).coerceAtLeast(0f))
-        bottom = max(bottom, (blurOutset + it.offsetY).coerceAtLeast(0f))
+        // 阴影层包含描边轮廓，预留范围需要覆盖“描边 + 模糊”的最终外扩。
+        val shadowOutset = strokeOutset + blurOutset
+        left = max(left, (shadowOutset - it.offsetX).coerceAtLeast(0f))
+        top = max(top, (shadowOutset - it.offsetY).coerceAtLeast(0f))
+        right = max(right, (shadowOutset + it.offsetX).coerceAtLeast(0f))
+        bottom = max(bottom, (shadowOutset + it.offsetY).coerceAtLeast(0f))
     }
 
     return TextVisualOutset(left, top, right, bottom)
