@@ -11,6 +11,35 @@ import org.jetbrains.skia.paragraph.TypefaceFontProvider
 import java.util.Locale
 
 /**
+ * 字体排版校准设置。
+ *
+ * 默认关闭，不改变布局库原有排版行为。业务层可以在需要更稳定视觉表现的绘图场景中开启
+ * [normalizeLineHeight]，让不同字体的自然行高向同一个目标体验靠拢。
+ */
+public data class FontTypographySettings(
+    val normalizeLineHeight: Boolean = false,
+    val targetLineHeight: Float = DEFAULT_TARGET_LINE_HEIGHT,
+    val lineHeightScale: Float = 1f,
+    val letterSpacingEm: Float = 0f,
+) {
+    init {
+        require(targetLineHeight in 1.0f..2.0f) { "targetLineHeight 需要在 1.0 到 2.0 之间" }
+        require(lineHeightScale in 0.75f..1.5f) { "lineHeightScale 需要在 0.75 到 1.5 之间" }
+        require(letterSpacingEm in -0.08f..0.08f) { "letterSpacingEm 需要在 -0.08 到 0.08 之间" }
+    }
+
+    public companion object {
+        public const val DEFAULT_TARGET_LINE_HEIGHT: Float = 1.34f
+
+        public val DEFAULT: FontTypographySettings = FontTypographySettings()
+
+        public val NORMALIZED: FontTypographySettings = FontTypographySettings(
+            normalizeLineHeight = true,
+        )
+    }
+}
+
+/**
  * 单次绘图或一棵布局树的字体上下文。
  *
  * 它持有独立的字体提供器和 [FontCollection]。布局库中的 Text/RichText 会通过它统一解析
@@ -27,6 +56,11 @@ public class FontRegistry {
         .setAssetFontManager(fontProvider)
         .setDynamicFontManager(systemFontMgr)
         .setDefaultFontManager(systemFontMgr)
+
+    /**
+     * 文本排版校准设置。默认关闭；开启后只影响通过本 registry 解析的 Text/RichText。
+     */
+    public var typographySettings: FontTypographySettings = FontTypographySettings.DEFAULT
 
     /**
      * 默认正文字体。Text/RichText 遇到空字体族或通用字体族时会优先使用它。
@@ -148,6 +182,7 @@ public class FontRegistry {
         val typeface = resolveTextTypeface(style, fallbackStyle) ?: return result
         result.setTypeface(typeface)
         result.fontFamilies = resolvedFamilies(style, fallbackStyle, typeface)
+        applyTypography(result, style, fallbackStyle, typeface)
         return result
     }
 
@@ -163,6 +198,46 @@ public class FontRegistry {
             ?: fallbackStyle?.fontSize?.takeIf { it > 0f }
             ?: defaultSize
         return Font(resolveTextTypeface(style, fallbackStyle), size)
+    }
+
+    private fun applyTypography(
+        result: TextStyle,
+        style: TextStyle,
+        fallbackStyle: TextStyle?,
+        typeface: Typeface,
+    ) {
+        val settings = typographySettings
+        val size = result.fontSize.takeIf { it > 0f }
+            ?: style.fontSize.takeIf { it > 0f }
+            ?: fallbackStyle?.fontSize?.takeIf { it > 0f }
+            ?: DEFAULT_FONT_SIZE
+
+        if (settings.normalizeLineHeight && style.height == null && fallbackStyle?.height == null) {
+            result.height = normalizedLineHeight(typeface, size, settings)
+        }
+
+        val letterSpacing = settings.letterSpacingEm * size
+        if (letterSpacing != 0f) {
+            result.letterSpacing = result.letterSpacing + letterSpacing
+        }
+    }
+
+    private fun normalizedLineHeight(
+        typeface: Typeface,
+        size: Float,
+        settings: FontTypographySettings,
+    ): Float {
+        val natural = Font(typeface, size).metrics.height
+            .takeIf { it.isFinite() && it > 0f }
+            ?.let { it / size.coerceAtLeast(1f) }
+            ?.takeIf { it.isFinite() && it > 0f }
+            ?: settings.targetLineHeight
+        val scale = settings.lineHeightScale
+        val target = settings.targetLineHeight.coerceIn(MIN_NORMALIZED_LINE_HEIGHT, MAX_NORMALIZED_LINE_HEIGHT) * scale
+        val min = MIN_NORMALIZED_LINE_HEIGHT * scale
+        val max = MAX_NORMALIZED_LINE_HEIGHT * scale
+        val correction = (target / natural).coerceIn(MAX_LINE_HEIGHT_COMPRESSION, MAX_LINE_HEIGHT_EXPANSION)
+        return (natural * correction).coerceIn(min, max)
     }
 
     private fun registerTypeface(typeface: Typeface, aliases: Iterable<String>) {
@@ -217,6 +292,10 @@ public class FontRegistry {
         public const val EMOJI_FAMILY: String = "skiko-layout-emoji"
 
         private const val DEFAULT_FONT_SIZE: Float = 14f
+        private const val MIN_NORMALIZED_LINE_HEIGHT: Float = 1.16f
+        private const val MAX_NORMALIZED_LINE_HEIGHT: Float = 1.58f
+        private const val MAX_LINE_HEIGHT_COMPRESSION: Float = 0.86f
+        private const val MAX_LINE_HEIGHT_EXPANSION: Float = 1.22f
 
         private val DEFAULT_TEXT_ALIASES: List<String> = listOf(
             TEXT_FAMILY,
@@ -251,7 +330,11 @@ public fun TextStyle.copyStyle(): TextStyle {
     result.fontSize = fontSize
     result.fontStyle = fontStyle
     result.fontFamilies = fontFamilies.copyOf()
+    result.height = height
+    result.topRatio = topRatio
     result.letterSpacing = letterSpacing
+    result.baselineShift = baselineShift
+    result.wordSpacing = wordSpacing
     foreground?.let { result.setForeground(it.makeClone()) }
     background?.let { result.setBackground(it.makeClone()) }
     shadows.forEach { result.addShadow(it) }

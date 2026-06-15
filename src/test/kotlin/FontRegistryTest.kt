@@ -3,9 +3,11 @@ import org.jetbrains.skia.Surface
 import org.jetbrains.skia.paragraph.TextStyle
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import top.colter.skiko.FontRegistry
+import top.colter.skiko.FontTypographySettings
 import top.colter.skiko.Modifier
 import top.colter.skiko.data.LayoutAlignment
 import top.colter.skiko.data.RichParagraphBuilder
@@ -90,6 +92,75 @@ internal class FontRegistryTest {
         )
         surface.canvas.clear(Color.TRANSPARENT)
         root.draw(surface.canvas)
+    }
+
+    @Test
+    fun `typography normalization is disabled by default`() {
+        val registry = testRegistry()
+        val style = TextStyle().setFontSize(24f)
+
+        val resolved = registry.resolveTextStyle(style)
+
+        assertNull(resolved.height)
+    }
+
+    @Test
+    fun `typography normalization sets bounded line height`() {
+        val registry = testRegistry()
+        registry.typographySettings = FontTypographySettings.NORMALIZED
+        val style = TextStyle().setFontSize(24f)
+
+        val resolved = registry.resolveTextStyle(style)
+
+        assertTrue(resolved.height!! in 1.16f..1.58f)
+    }
+
+    @Test
+    fun `line height scale changes normalized result`() {
+        val style = TextStyle().setFontSize(24f)
+
+        val smallerRegistry = testRegistry().apply {
+            typographySettings = FontTypographySettings.NORMALIZED.copy(lineHeightScale = 0.9f)
+        }
+        val defaultRegistry = testRegistry().apply {
+            typographySettings = FontTypographySettings.NORMALIZED
+        }
+        val largerRegistry = testRegistry().apply {
+            typographySettings = FontTypographySettings.NORMALIZED.copy(lineHeightScale = 1.1f)
+        }
+
+        val smaller = smallerRegistry.resolveTextStyle(style).height!!
+        val default = defaultRegistry.resolveTextStyle(style).height!!
+        val larger = largerRegistry.resolveTextStyle(style).height!!
+
+        assertTrue(smaller < default)
+        assertTrue(default < larger)
+    }
+
+    @Test
+    fun `explicit line height is preserved when typography normalization is enabled`() {
+        val registry = testRegistry()
+        registry.typographySettings = FontTypographySettings.NORMALIZED
+        val style = TextStyle()
+            .setFontSize(24f)
+            .setHeight(1.8f)
+
+        val resolved = registry.resolveTextStyle(style)
+
+        assertEquals(1.8f, resolved.height)
+    }
+
+    @Test
+    fun `letter spacing em is applied after style resolution`() {
+        val registry = testRegistry()
+        registry.typographySettings = FontTypographySettings(letterSpacingEm = 0.02f)
+        val style = TextStyle()
+            .setFontSize(25f)
+            .setLetterSpacing(1f)
+
+        val resolved = registry.resolveTextStyle(style)
+
+        assertEquals(1.5f, resolved.letterSpacing, 0.001f)
     }
 
     private fun testRegistry(): FontRegistry {
