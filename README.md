@@ -15,14 +15,14 @@ v0.0.2升级v0.0.3请看 [v0.0.3](https://github.com/Colter23/skiko-layout/relea
 ## 使用
 ### Gradle
 ```kotlin
-implementation("top.colter.skiko:skiko-layout:0.0.5")
+implementation("top.colter.skiko:skiko-layout:0.0.6")
 ```
 ### Maven
 ```xml
 <dependency>
     <groupId>top.colter.skiko</groupId>
     <artifactId>skiko-layout</artifactId>
-    <version>0.0.5</version>
+    <version>0.0.6</version>
 </dependency>
 ```
 ## 单位
