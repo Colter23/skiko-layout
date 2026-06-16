@@ -269,6 +269,25 @@ internal class DrawTest {
     }
 
     @Test
+    fun `rich text image emoji placeholder follows font size`() {
+        val emoji = solidImage(64, 64, Color.YELLOW)
+        val style = TextStyle()
+            .setColor(Color.BLACK)
+            .setFontSize(42f)
+            .setFontFamily(Fonts.default.textTypeface!!.familyName)
+
+        val paragraph = RichParagraphBuilder(style)
+            .addEmoji("[emoji]", emoji, style)
+            .build()
+
+        val layout = paragraph.layout(200f)
+        val placeholder = layout.placeholders.single().rect
+
+        assertEquals(42f, placeholder.width, 0.01f)
+        assertEquals(42f, placeholder.height, 0.01f)
+    }
+
+    @Test
     fun `文字样式复制保留绘制效果`() {
         val style = TextStyle()
             .setColor(Color.BLACK)

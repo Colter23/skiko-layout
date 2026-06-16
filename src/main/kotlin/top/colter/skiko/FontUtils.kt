@@ -176,6 +176,9 @@ public class FontRegistry {
 
     /**
      * 返回带有已解析字体信息的样式副本，不修改传入的 [style]。
+     *
+     * 当 registry 已加载 Emoji 字体时，普通文本和显式字体会自动追加 Emoji 回退族，
+     * 让 Unicode emoji 在 Paragraph/TextLayout 中尽量走 Emoji 字体渲染。
      */
     public fun resolveTextStyle(style: TextStyle, fallbackStyle: TextStyle? = null): TextStyle {
         val result = style.copyStyle()
@@ -255,19 +258,32 @@ public class FontRegistry {
         fallbackStyle: TextStyle?,
         typeface: Typeface,
     ): Array<String> {
-        style.typeface?.let {
-            return explicitFamily(style.fontFamilies)
-                ?.let { arrayOf(it) }
-                ?: arrayOf(typeface.familyName)
+        val styleFamily = explicitFamily(style.fontFamilies)
+        val fallbackFamily = explicitFamily(fallbackStyle?.fontFamilies ?: emptyArray())
+        val fallbackTypeface = fallbackStyle?.typeface
+        val primary = when {
+            style.typeface != null -> styleFamily ?: typeface.familyName
+            styleFamily != null -> styleFamily
+            fallbackTypeface != null -> fallbackFamily ?: fallbackTypeface.familyName
+            fallbackFamily != null -> fallbackFamily
+            typeface === textTypeface -> TEXT_FAMILY
+            else -> typeface.familyName
         }
-        explicitFamily(style.fontFamilies)?.let { return arrayOf(it) }
-        fallbackStyle?.typeface?.let {
-            return explicitFamily(fallbackStyle.fontFamilies)
-                ?.let { arrayOf(it) }
-                ?: arrayOf(it.familyName)
-        }
-        explicitFamily(fallbackStyle?.fontFamilies ?: emptyArray())?.let { return arrayOf(it) }
-        return if (typeface === textTypeface) arrayOf(TEXT_FAMILY) else arrayOf(typeface.familyName)
+        return appendEmojiFallback(primary, typeface)
+    }
+
+    private fun appendEmojiFallback(primaryFamily: String, typeface: Typeface): Array<String> {
+        if (!hasEmojiTypeface() || isEmojiTypeface(typeface)) return arrayOf(primaryFamily)
+        val families = linkedSetOf(primaryFamily)
+        families += EMOJI_FAMILY
+        return families.toTypedArray()
+    }
+
+    private fun hasEmojiTypeface(): Boolean = emojiTypeface != null
+
+    private fun isEmojiTypeface(typeface: Typeface): Boolean {
+        val loadedEmojiFamily = emojiTypeface?.familyName ?: return false
+        return typeface === emojiTypeface || typeface.familyName.equals(loadedEmojiFamily, ignoreCase = true)
     }
 
     private fun explicitFamily(families: Array<String>): String? {

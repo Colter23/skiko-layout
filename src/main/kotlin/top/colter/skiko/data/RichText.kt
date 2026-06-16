@@ -1,7 +1,6 @@
 package top.colter.skiko.data
 
 import org.jetbrains.skia.Image
-import org.jetbrains.skia.TextLine
 import org.jetbrains.skia.paragraph.Paragraph
 import org.jetbrains.skia.paragraph.TextStyle
 import top.colter.skiko.FontRegistry
@@ -44,9 +43,5 @@ public sealed class RichText {
         val value: String,
         val img: Image,
         val style: TextStyle? = null,
-    ) : RichText() {
-        internal var drawCacheStyle: TextStyle? = null
-        internal var drawCacheFontRegistry: FontRegistry? = null
-        internal var drawCacheLine: TextLine? = null
-    }
+    ) : RichText()
 }

@@ -6,7 +6,6 @@ import org.jetbrains.skia.FilterMode
 import org.jetbrains.skia.Image
 import org.jetbrains.skia.MipmapMode
 import org.jetbrains.skia.Rect
-import org.jetbrains.skia.TextLine
 import org.jetbrains.skia.paragraph.Alignment
 import org.jetbrains.skia.paragraph.BaselineMode
 import org.jetbrains.skia.paragraph.Paragraph
@@ -114,12 +113,12 @@ public fun RichParagraph.layout(
 
                 is RichText.Emoji -> {
                     val style = node.style ?: defaultStyle
-                    val lineSize = node.textLine(style, defaultStyle, fontRegistry)
+                    val placeholderSize = style.emojiPlaceholderSize(defaultStyle)
                     builder.pushStyle(fontRegistry.resolveTextStyle(style, defaultStyle))
                     builder.addPlaceholder(
                         PlaceholderStyle(
-                            lineSize.width,
-                            lineSize.height,
+                            placeholderSize,
+                            placeholderSize,
                             PlaceholderAlignment.MIDDLE,
                             BaselineMode.ALPHABETIC,
                             0f,
@@ -208,19 +207,10 @@ public fun RichParagraphLayout.print(
 }
 
 private const val DEFAULT_FONT_SIZE: Float = 14f
-private const val EMOJI_MEASURE_TEXT: String = "\uD83D\uDE42"
 
-private fun RichText.Emoji.textLine(
-    style: TextStyle,
-    fallbackStyle: TextStyle,
-    fontRegistry: FontRegistry,
-): TextLine {
-    val cached = drawCacheLine
-    if (cached != null && drawCacheStyle === style && drawCacheFontRegistry === fontRegistry) return cached
-
-    val line = TextLine.make(EMOJI_MEASURE_TEXT, fontRegistry.resolveTextFont(style, fallbackStyle, DEFAULT_FONT_SIZE))
-    drawCacheStyle = style
-    drawCacheFontRegistry = fontRegistry
-    drawCacheLine = line
-    return line
+private fun TextStyle.emojiPlaceholderSize(fallbackStyle: TextStyle): Float {
+    return fontSize
+        .takeIf { it > 0f }
+        ?: fallbackStyle.fontSize.takeIf { it > 0f }
+        ?: DEFAULT_FONT_SIZE
 }

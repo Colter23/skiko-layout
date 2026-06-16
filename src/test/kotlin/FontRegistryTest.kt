@@ -1,8 +1,8 @@
 import org.jetbrains.skia.Color
 import org.jetbrains.skia.Surface
 import org.jetbrains.skia.paragraph.TextStyle
+import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -36,11 +36,25 @@ internal class FontRegistryTest {
         val resolved = registry.resolveTextStyle(style)
 
         assertEquals(textTypeface.familyName, resolved.typeface?.familyName)
-        assertEquals(FontRegistry.TEXT_FAMILY, resolved.fontFamilies.single())
+        assertArrayEquals(arrayOf(FontRegistry.TEXT_FAMILY, FontRegistry.EMOJI_FAMILY), resolved.fontFamilies)
     }
 
     @Test
-    fun `explicit family is not replaced by registry text typeface`() {
+    fun `explicit text family keeps primary family and appends emoji fallback`() {
+        val registry = testRegistry()
+        val textTypeface = registry.textTypeface!!
+
+        val style = TextStyle().setFontSize(24f)
+        style.fontFamilies = arrayOf(textTypeface.familyName)
+
+        val resolved = registry.resolveTextStyle(style)
+
+        assertEquals(textTypeface.familyName, resolved.typeface?.familyName)
+        assertArrayEquals(arrayOf(textTypeface.familyName, FontRegistry.EMOJI_FAMILY), resolved.fontFamilies)
+    }
+
+    @Test
+    fun `explicit emoji family is not duplicated as fallback`() {
         val registry = testRegistry()
         val emojiTypeface = registry.emojiTypeface!!
 
@@ -50,7 +64,21 @@ internal class FontRegistryTest {
         val resolved = registry.resolveTextStyle(style)
 
         assertEquals(emojiTypeface.familyName, resolved.typeface?.familyName)
-        assertNotEquals(FontRegistry.TEXT_FAMILY, resolved.fontFamilies.single())
+        assertArrayEquals(arrayOf(emojiTypeface.familyName), resolved.fontFamilies)
+    }
+
+    @Test
+    fun `registry without emoji typeface keeps original resolved families`() {
+        val registry = FontRegistry()
+        registry.loadTextTypeface(testResource.resolve("font").resolve("LXGWWenKai-Bold.ttf").absolutePath)
+
+        val style = TextStyle().setFontSize(24f)
+        style.fontFamilies = arrayOf("sans-serif")
+
+        val resolved = registry.resolveTextStyle(style)
+
+        assertEquals(registry.textTypeface?.familyName, resolved.typeface?.familyName)
+        assertArrayEquals(arrayOf(FontRegistry.TEXT_FAMILY), resolved.fontFamilies)
     }
 
     @Test
@@ -68,7 +96,7 @@ internal class FontRegistryTest {
 
         val textLayout = root.child.single() as TextLayout
         assertEquals(registry.textTypeface?.familyName, textLayout.textStyle.typeface?.familyName)
-        assertEquals(FontRegistry.TEXT_FAMILY, textLayout.textStyle.fontFamilies.single())
+        assertArrayEquals(arrayOf(FontRegistry.TEXT_FAMILY, FontRegistry.EMOJI_FAMILY), textLayout.textStyle.fontFamilies)
     }
 
     @Test
@@ -77,8 +105,11 @@ internal class FontRegistryTest {
         val style = TextStyle().setColor(Color.BLACK).setFontSize(24f)
         style.fontFamilies = arrayOf("sans-serif")
         val paragraph = RichParagraphBuilder(style)
-            .addText("富文本字体测试")
+            .addText("富文本字体测试 😍❤️")
             .build()
+
+        val resolved = registry.resolveTextStyle(style)
+        assertArrayEquals(arrayOf(FontRegistry.TEXT_FAMILY, FontRegistry.EMOJI_FAMILY), resolved.fontFamilies)
 
         val layout = paragraph.layout(300f, fontRegistry = registry)
         assertTrue(layout.height > 0f)
