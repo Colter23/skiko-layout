@@ -1,11 +1,9 @@
 package top.colter.skiko.data
 
 import org.jetbrains.skia.Canvas
-import org.jetbrains.skia.FilterMipmap
-import org.jetbrains.skia.FilterMode
 import org.jetbrains.skia.Image
-import org.jetbrains.skia.MipmapMode
 import org.jetbrains.skia.Rect
+import org.jetbrains.skia.SamplingMode
 import org.jetbrains.skia.paragraph.Alignment
 import org.jetbrains.skia.paragraph.BaselineMode
 import org.jetbrains.skia.paragraph.Paragraph
@@ -114,11 +112,12 @@ public fun RichParagraph.layout(
                 is RichText.Emoji -> {
                     val style = node.style ?: defaultStyle
                     val placeholderSize = style.emojiPlaceholderSize(defaultStyle)
+                    val scaledPlaceholderSize = (placeholderSize * node.scale).coerceAtLeast(1f)
                     builder.pushStyle(fontRegistry.resolveTextStyle(style, defaultStyle))
                     builder.addPlaceholder(
                         PlaceholderStyle(
-                            placeholderSize,
-                            placeholderSize,
+                            scaledPlaceholderSize,
+                            scaledPlaceholderSize,
                             PlaceholderAlignment.MIDDLE,
                             BaselineMode.ALPHABETIC,
                             0f,
@@ -189,17 +188,28 @@ public fun RichParagraphLayout.print(
             placeholder.img.height.toFloat(),
         )
         val rect = placeholder.rect
+        val imageAspect = placeholder.img.width.toFloat() / placeholder.img.height.toFloat()
+        val rectAspect = rect.width / rect.height
+        val (drawWidth, drawHeight) = if (imageAspect >= rectAspect) {
+            val height = rect.width / imageAspect
+            rect.width to height
+        } else {
+            val width = rect.height * imageAspect
+            width to rect.height
+        }
+        val drawLeft = x + rect.left + (rect.width - drawWidth) / 2f
+        val drawTop = y + rect.top + (rect.height - drawHeight) / 2f
         val targetRect = Rect.makeLTRB(
-            x + rect.left,
-            y + rect.top,
-            x + rect.right,
-            y + rect.bottom,
+            drawLeft,
+            drawTop,
+            drawLeft + drawWidth,
+            drawTop + drawHeight,
         )
         canvas.drawImageRect(
             placeholder.img,
             srcRect,
             targetRect,
-            FilterMipmap(FilterMode.LINEAR, MipmapMode.NEAREST),
+            SamplingMode.MITCHELL,
             null,
             true,
         )

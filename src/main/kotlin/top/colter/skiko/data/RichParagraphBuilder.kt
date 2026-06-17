@@ -59,8 +59,14 @@ public class RichParagraphBuilder private constructor(
     /**
      * 添加emoji，可指定emoji图片
      */
-    public fun addEmoji(value: String, img: Image, style: TextStyle? = null): RichParagraphBuilder {
-        return addRichText(RichText.Emoji(value, img, style?.copyStyle()))
+    public fun addEmoji(
+        value: String,
+        img: Image,
+        style: TextStyle? = null,
+        scale: Float = 1f,
+    ): RichParagraphBuilder {
+        require(scale > 0f) { "Emoji 图片缩放倍率必须大于 0" }
+        return addRichText(RichText.Emoji(value, img, style?.copyStyle(), scale))
     }
 
     /**

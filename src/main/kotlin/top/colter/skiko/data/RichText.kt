@@ -38,10 +38,12 @@ public sealed class RichText {
      * @param value Emoji文本
      * @param img Emoji图片
      * @param style 文本样式
+     * @param scale 图片占位缩放倍率，按文字中心放大或缩小
      */
     public data class Emoji(
         val value: String,
         val img: Image,
         val style: TextStyle? = null,
+        val scale: Float = 1f,
     ) : RichText()
 }
