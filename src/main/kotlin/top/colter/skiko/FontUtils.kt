@@ -113,6 +113,15 @@ public class FontRegistry {
     }
 
     /**
+     * 从文件加载普通文本缺字回退字体，但不改变默认正文字体。
+     */
+    public fun loadTextFallbackTypeface(path: String, alias: String? = null, index: Int = 0): Typeface? {
+        val face = systemFontMgr.makeFromFile(path, index)
+        if (face != null) registerTextFallbackTypeface(face, alias)
+        return face
+    }
+
+    /**
      * 从内存数据加载并设置默认正文字体。
      */
     public fun loadTextTypeface(data: Data, alias: String? = null, index: Int = 0): Typeface? {
@@ -127,6 +136,15 @@ public class FontRegistry {
     public fun loadEmojiTypeface(data: Data, alias: String? = null, index: Int = 0): Typeface? {
         val face = systemFontMgr.makeFromData(data, index)
         if (face != null) registerEmojiTypeface(face, alias)
+        return face
+    }
+
+    /**
+     * 从内存数据加载普通文本缺字回退字体，但不改变默认正文字体。
+     */
+    public fun loadTextFallbackTypeface(data: Data, alias: String? = null, index: Int = 0): Typeface? {
+        val face = systemFontMgr.makeFromData(data, index)
+        if (face != null) registerTextFallbackTypeface(face, alias)
         return face
     }
 
@@ -157,6 +175,16 @@ public class FontRegistry {
     }
 
     /**
+     * 注册普通文本缺字回退字体，但不改变默认正文字体。
+     *
+     * 这些字体会在默认正文字体或显式字体之后参与 Paragraph 字形回退，避免回退字体抢占主字体。
+     */
+    public fun registerTextFallbackTypeface(typeface: Typeface, alias: String? = null): Typeface {
+        registerTypeface(typeface, listOfNotNull(TEXT_FALLBACK_FAMILY, alias?.takeIf { it.isNotBlank() }))
+        return typeface
+    }
+
+    /**
      * 为 Paragraph/TextLine 解析实际使用的正文字体。
      *
      * 空字体族以及 Skiko 在 Linux 上默认填入的 sans-serif 等通用字体族会被视为未显式指定。
@@ -178,8 +206,8 @@ public class FontRegistry {
     /**
      * 返回带有已解析字体信息的样式副本，不修改传入的 [style]。
      *
-     * 当 registry 已加载 Emoji 字体时，普通文本和显式字体会自动追加 Emoji 回退族，
-     * 让 Unicode emoji 在 Paragraph/TextLayout 中尽量走 Emoji 字体渲染。
+     * 当 registry 已加载普通文本缺字回退或 Emoji 字体时，普通文本和显式字体会自动追加回退族，
+     * 让普通缺字和 Unicode emoji 在 Paragraph/TextLayout 中尽量走对应字体渲染。
      */
     public fun resolveTextStyle(style: TextStyle, fallbackStyle: TextStyle? = null): TextStyle {
         val result = style.copyStyle()
@@ -245,11 +273,15 @@ public class FontRegistry {
     }
 
     private fun registerTypeface(typeface: Typeface, aliases: Iterable<String>) {
+        val aliasList = aliases.filter { it.isNotBlank() }.distinct()
+        if (aliasList.any { it == TEXT_FALLBACK_FAMILY }) {
+            hasTextFallbackTypeface = true
+        }
         fontProvider.registerTypeface(typeface)
         typeface.familyName.takeIf { it.isNotBlank() }?.let {
             fontProvider.registerTypeface(typeface, it)
         }
-        aliases.filter { it.isNotBlank() }.distinct().forEach {
+        aliasList.forEach {
             fontProvider.registerTypeface(typeface, it)
         }
     }
@@ -270,15 +302,24 @@ public class FontRegistry {
             typeface === textTypeface -> TEXT_FAMILY
             else -> typeface.familyName
         }
-        return appendEmojiFallback(primary, typeface)
+        return appendFallbackFamilies(primary, typeface)
     }
 
-    private fun appendEmojiFallback(primaryFamily: String, typeface: Typeface): Array<String> {
-        if (!hasEmojiTypeface() || isEmojiTypeface(typeface)) return arrayOf(primaryFamily)
+    private fun appendFallbackFamilies(primaryFamily: String, typeface: Typeface): Array<String> {
         val families = linkedSetOf(primaryFamily)
-        families += EMOJI_FAMILY
+        val emojiTypeface = isEmojiTypeface(typeface)
+        if (hasTextFallbackTypeface() && !emojiTypeface) {
+            families += TEXT_FALLBACK_FAMILY
+        }
+        if (hasEmojiTypeface() && !emojiTypeface) {
+            families += EMOJI_FAMILY
+        }
         return families.toTypedArray()
     }
+
+    private var hasTextFallbackTypeface: Boolean = false
+
+    private fun hasTextFallbackTypeface(): Boolean = hasTextFallbackTypeface
 
     private fun hasEmojiTypeface(): Boolean = emojiTypeface != null
 
@@ -304,6 +345,9 @@ public class FontRegistry {
     public companion object {
         /** 布局库内部使用的默认正文字体族别名。 */
         public const val TEXT_FAMILY: String = "skiko-layout-text"
+
+        /** 布局库内部使用的普通文本缺字回退字体族别名。 */
+        public const val TEXT_FALLBACK_FAMILY: String = "skiko-layout-text-fallback"
 
         /** 布局库内部使用的默认 Emoji 字体族别名。 */
         public const val EMOJI_FAMILY: String = "skiko-layout-emoji"

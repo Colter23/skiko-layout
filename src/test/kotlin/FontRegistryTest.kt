@@ -83,6 +83,69 @@ internal class FontRegistryTest {
     }
 
     @Test
+    fun `generic family appends text fallback before emoji fallback`() {
+        val registry = testRegistryWithTextFallback()
+        val textTypeface = registry.textTypeface!!
+
+        val style = TextStyle().setFontSize(24f)
+        style.fontFamilies = arrayOf("sans-serif")
+
+        val resolved = registry.resolveTextStyle(style)
+
+        assertEquals(textTypeface.familyName, resolved.typeface?.familyName)
+        assertArrayEquals(
+            arrayOf(FontRegistry.TEXT_FAMILY, FontRegistry.TEXT_FALLBACK_FAMILY, FontRegistry.EMOJI_FAMILY),
+            resolved.fontFamilies,
+        )
+    }
+
+    @Test
+    fun `explicit text family appends text fallback before emoji fallback`() {
+        val registry = testRegistryWithTextFallback()
+        val textTypeface = registry.textTypeface!!
+
+        val style = TextStyle().setFontSize(24f)
+        style.fontFamilies = arrayOf(textTypeface.familyName)
+
+        val resolved = registry.resolveTextStyle(style)
+
+        assertEquals(textTypeface.familyName, resolved.typeface?.familyName)
+        assertArrayEquals(
+            arrayOf(textTypeface.familyName, FontRegistry.TEXT_FALLBACK_FAMILY, FontRegistry.EMOJI_FAMILY),
+            resolved.fontFamilies,
+        )
+    }
+
+    @Test
+    fun `registry with text fallback but without emoji appends only text fallback`() {
+        val registry = FontRegistry()
+        registry.loadTextTypeface(testResource.resolve("font").resolve("LXGWWenKai-Bold.ttf").absolutePath)
+        registry.loadTextFallbackTypeface(testResource.resolve("font").resolve("Seguiemj.ttf").absolutePath)
+
+        val style = TextStyle().setFontSize(24f)
+        style.fontFamilies = arrayOf("sans-serif")
+
+        val resolved = registry.resolveTextStyle(style)
+
+        assertEquals(registry.textTypeface?.familyName, resolved.typeface?.familyName)
+        assertArrayEquals(arrayOf(FontRegistry.TEXT_FAMILY, FontRegistry.TEXT_FALLBACK_FAMILY), resolved.fontFamilies)
+    }
+
+    @Test
+    fun `explicit emoji family ignores text fallback and emoji fallback`() {
+        val registry = testRegistryWithTextFallback()
+        val emojiTypeface = registry.emojiTypeface!!
+
+        val style = TextStyle().setFontSize(24f)
+        style.fontFamilies = arrayOf(emojiTypeface.familyName)
+
+        val resolved = registry.resolveTextStyle(style)
+
+        assertEquals(emojiTypeface.familyName, resolved.typeface?.familyName)
+        assertArrayEquals(arrayOf(emojiTypeface.familyName), resolved.fontFamilies)
+    }
+
+    @Test
     fun `text layout resolves generic family before paragraph build`() {
         val registry = testRegistry()
         val style = TextStyle().setColor(Color.BLACK).setFontSize(24f)
@@ -234,6 +297,12 @@ internal class FontRegistryTest {
         val registry = FontRegistry()
         registry.loadTextTypeface(testResource.resolve("font").resolve("LXGWWenKai-Bold.ttf").absolutePath)
         registry.loadEmojiTypeface(testResource.resolve("font").resolve("NotoColorEmoji.ttf").absolutePath)
+        return registry
+    }
+
+    private fun testRegistryWithTextFallback(): FontRegistry {
+        val registry = testRegistry()
+        registry.loadTextFallbackTypeface(testResource.resolve("font").resolve("Seguiemj.ttf").absolutePath)
         return registry
     }
 
