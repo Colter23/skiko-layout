@@ -14,6 +14,7 @@ import top.colter.skiko.data.print
 import top.colter.skiko.data.place
 import top.colter.skiko.dp
 import top.colter.skiko.toDp
+import top.colter.skiko.data.Edge
 
 
 /**
@@ -110,8 +111,9 @@ public class RichTextLayout(
     }
 
     override fun draw(canvas: Canvas) {
-        drawBgBox(canvas) {
-            cachedParagraph?.print(
+        drawBgBox(canvas, contentClipOutset = richTextContentClipOutset(cachedParagraph)) {
+            val layout = cachedParagraph ?: return@drawBgBox
+            layout.print(
                 canvas = canvas,
                 x = it.left + RICH_TEXT_VISUAL_OUTSET,
                 y = it.top + RICH_TEXT_VISUAL_OUTSET,
@@ -123,3 +125,8 @@ public class RichTextLayout(
 internal const val RICH_TEXT_VISUAL_OUTSET: Float = 1f
 internal const val RICH_TEXT_VISUAL_OUTSET_HORIZONTAL: Float = RICH_TEXT_VISUAL_OUTSET * 2f
 internal const val RICH_TEXT_VISUAL_OUTSET_VERTICAL: Float = RICH_TEXT_VISUAL_OUTSET * 2f
+internal fun richTextContentClipOutset(layout: RichParagraphLayout?): Edge =
+    verticalContentClipOutset(layout?.lineBoxClipOutset ?: 0f)
+
+internal fun verticalContentClipOutset(outset: Float): Edge =
+    if (outset <= 0f) Edge() else Edge(top = outset.toDp(), bottom = outset.toDp())

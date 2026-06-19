@@ -323,7 +323,11 @@ public data class LayoutBounds(
 /**
  * 绘制盒子
  */
-public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}) {
+public fun Layout.drawBgBox(
+    canvas: Canvas,
+    contentClipOutset: Edge = Edge(),
+    content: Canvas.(RRect) -> Unit = {},
+) {
 
     // 圆角 / 形状
     val border = modifier.border
@@ -459,8 +463,8 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
             floatArrayOf(0f, 0f, 0f, 0f)
         )
         canvas.save()
-        canvas.clipRRect(rrect, ClipMode.INTERSECT, true)
-        canvas.clipRRect(contentRRect, ClipMode.INTERSECT, true)
+        canvas.clipRRect(rrect.expand(contentClipOutset), ClipMode.INTERSECT, true)
+        canvas.clipRRect(contentRRect.expand(contentClipOutset), ClipMode.INTERSECT, true)
         canvas.content(contentRRect)
         canvas.restore()
     }
@@ -475,6 +479,17 @@ public fun Layout.drawBgBox(canvas: Canvas, content: Canvas.(RRect) -> Unit = {}
             isAntiAlias = true
         })
     }
+}
+
+private fun RRect.expand(edge: Edge): RRect {
+    if (edge.isEmpty()) return this
+    return RRect.makeComplexXYWH(
+        left - edge.left.px,
+        top - edge.top.px,
+        right - left + edge.horizontal.px,
+        bottom - top + edge.vertical.px,
+        radii.copyOf(),
+    )
 }
 
 private fun Layout.resolveCornerRadius(border: Border?): FloatArray {

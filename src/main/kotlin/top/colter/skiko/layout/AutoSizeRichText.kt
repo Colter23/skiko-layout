@@ -292,8 +292,9 @@ public class AutoSizeRichTextLayout(
     }
 
     override fun draw(canvas: Canvas) {
-        drawBgBox(canvas) {
-            selectedLayout?.print(
+        drawBgBox(canvas, contentClipOutset = richTextContentClipOutset(selectedLayout)) {
+            val layout = selectedLayout ?: return@drawBgBox
+            layout.print(
                 canvas = canvas,
                 x = it.left + RICH_TEXT_VISUAL_OUTSET,
                 y = it.top + RICH_TEXT_VISUAL_OUTSET,

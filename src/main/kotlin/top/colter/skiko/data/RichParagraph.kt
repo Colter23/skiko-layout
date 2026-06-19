@@ -14,6 +14,7 @@ import org.jetbrains.skia.paragraph.PlaceholderStyle
 import org.jetbrains.skia.paragraph.TextStyle
 import top.colter.skiko.FontRegistry
 import top.colter.skiko.Fonts
+import top.colter.skiko.lineBoxClipOutset
 
 /**
  * 富文本原始行。
@@ -63,6 +64,7 @@ public class RichParagraphLayout(
     public val placeholders: List<RichParagraphPlaceholder>,
     public val lineMetrics: List<RichParagraphLineMetric>,
     public val didExceedMaxLines: Boolean,
+    public val lineBoxClipOutset: Float = 0f,
 ) {
     public val lineCount: Int get() = lineMetrics.size
 
@@ -75,6 +77,7 @@ public class RichParagraphLayout(
                 placeholders = emptyList(),
                 lineMetrics = emptyList(),
                 didExceedMaxLines = false,
+                lineBoxClipOutset = 0f,
             )
     }
 }
@@ -92,10 +95,13 @@ public fun RichParagraph.layout(
 
     val maxWidth = width.coerceAtLeast(1f)
     val emojiNodes = mutableListOf<RichText.Emoji>()
+    var lineBoxClipOutset = 0f
     val paragraphStyle = ParagraphStyle().apply {
         this.maxLinesCount = maxLinesCount
         this.alignment = alignment
-        textStyle = fontRegistry.resolveTextStyle(defaultStyle)
+        textStyle = fontRegistry.resolveTextStyle(defaultStyle).also {
+            lineBoxClipOutset = maxOf(lineBoxClipOutset, it.lineBoxClipOutset(defaultStyle))
+        }
     }
     val builder = ParagraphBuilder(paragraphStyle, fontRegistry.fonts)
 
@@ -104,7 +110,9 @@ public fun RichParagraph.layout(
             when (node) {
                 is RichText.Text -> {
                     val style = node.style ?: defaultStyle
-                    builder.pushStyle(fontRegistry.resolveTextStyle(style, defaultStyle))
+                    val resolvedStyle = fontRegistry.resolveTextStyle(style, defaultStyle)
+                    lineBoxClipOutset = maxOf(lineBoxClipOutset, resolvedStyle.lineBoxClipOutset(defaultStyle))
+                    builder.pushStyle(resolvedStyle)
                     builder.addText(node.value)
                     builder.popStyle()
                 }
@@ -113,7 +121,9 @@ public fun RichParagraph.layout(
                     val style = node.style ?: defaultStyle
                     val placeholderSize = style.emojiPlaceholderSize(defaultStyle)
                     val scaledPlaceholderSize = (placeholderSize * node.scale).coerceAtLeast(1f)
-                    builder.pushStyle(fontRegistry.resolveTextStyle(style, defaultStyle))
+                    val resolvedStyle = fontRegistry.resolveTextStyle(style, defaultStyle)
+                    lineBoxClipOutset = maxOf(lineBoxClipOutset, resolvedStyle.lineBoxClipOutset(defaultStyle))
+                    builder.pushStyle(resolvedStyle)
                     builder.addPlaceholder(
                         PlaceholderStyle(
                             scaledPlaceholderSize,
@@ -167,6 +177,7 @@ public fun RichParagraph.layout(
         placeholders = placeholders,
         lineMetrics = lineMetrics,
         didExceedMaxLines = paragraph.didExceedMaxLines(),
+        lineBoxClipOutset = lineBoxClipOutset,
     )
 }
 

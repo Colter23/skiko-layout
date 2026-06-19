@@ -9,6 +9,7 @@ import org.jetbrains.skia.paragraph.FontCollection
 import org.jetbrains.skia.paragraph.TextStyle
 import org.jetbrains.skia.paragraph.TypefaceFontProvider
 import java.util.Locale
+import kotlin.math.max
 
 /**
  * 字体排版校准设置。
@@ -357,3 +358,28 @@ public fun TextStyle.copyStyle(): TextStyle {
     typeface?.let { result.setTypeface(it) }
     return result
 }
+
+internal fun TextStyle.lineBoxClipOutset(fallbackStyle: TextStyle? = null): Float {
+    height ?: fallbackStyle?.height ?: return 0f
+    val size = fontSize.takeIf { it > 0f }
+        ?: fallbackStyle?.fontSize?.takeIf { it > 0f }
+        ?: DEFAULT_TEXT_CLIP_FONT_SIZE
+    val lineHeight = height?.let { it * size }
+        ?: fallbackStyle?.height?.let { it * size }
+        ?: return 0f
+    val naturalHeight = typeface
+        ?.let { Font(it, size).metrics.height }
+        ?.takeIf { it.isFinite() && it > 0f }
+        ?: 0f
+    val safety = (size * TEXT_CLIP_SAFETY_RATIO).coerceIn(
+        MIN_TEXT_CLIP_SAFETY_OUTSET,
+        MAX_TEXT_CLIP_SAFETY_OUTSET,
+    )
+    val metricOverflow = ((naturalHeight - lineHeight) / 2f).coerceAtLeast(0f)
+    return max(metricOverflow, safety)
+}
+
+private const val DEFAULT_TEXT_CLIP_FONT_SIZE: Float = 14f
+private const val TEXT_CLIP_SAFETY_RATIO: Float = 0.08f
+private const val MIN_TEXT_CLIP_SAFETY_OUTSET: Float = 2f
+private const val MAX_TEXT_CLIP_SAFETY_OUTSET: Float = 10f

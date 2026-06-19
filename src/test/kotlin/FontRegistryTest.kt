@@ -1,4 +1,5 @@
 import org.jetbrains.skia.Color
+import org.jetbrains.skia.Font
 import org.jetbrains.skia.Surface
 import org.jetbrains.skia.paragraph.TextStyle
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -192,6 +193,41 @@ internal class FontRegistryTest {
         val resolved = registry.resolveTextStyle(style)
 
         assertEquals(1.5f, resolved.letterSpacing, 0.001f)
+    }
+
+    @Test
+    fun `text layout keeps measured height stable when normalized line height is smaller than font metrics`() {
+        val registry = testRegistry()
+        registry.typographySettings = FontTypographySettings.NORMALIZED.copy(lineHeightScale = 0.9f)
+        val style = TextStyle().setColor(Color.BLACK).setFontSize(34f)
+        val resolved = registry.resolveTextStyle(style)
+        val naturalHeight = Font(resolved.typeface, resolved.fontSize).metrics.height
+        val lineBoxHeight = resolved.height!! * resolved.fontSize
+
+        val root = measureRoot(registry) {
+            Text(
+                text = "荷叶糯米节安乐快康g.ip",
+                textStyle = style,
+            )
+        }
+
+        val textLayout = root.child.single() as TextLayout
+        assertTrue(lineBoxHeight < naturalHeight)
+        assertTrue(textLayout.height.px <= lineBoxHeight + 1f)
+    }
+
+    @Test
+    fun `rich paragraph exposes line box clip safety for normalized text`() {
+        val registry = testRegistry()
+        registry.typographySettings = FontTypographySettings.NORMALIZED.copy(lineHeightScale = 0.9f)
+        val style = TextStyle().setColor(Color.BLACK).setFontSize(42f)
+        val paragraph = RichParagraphBuilder(style)
+            .addText("Dynamic title g.ip")
+            .build()
+
+        val layout = paragraph.layout(400f, fontRegistry = registry)
+
+        assertTrue(layout.lineBoxClipOutset > 0f)
     }
 
     private fun testRegistry(): FontRegistry {

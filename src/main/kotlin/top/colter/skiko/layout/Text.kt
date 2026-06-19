@@ -104,6 +104,7 @@ public class TextLayout(
 ) : Layout(modifier, parentLayout, fontRegistry) {
 
     private val visualOutset: TextVisualOutset = textVisualOutset(stroke, textStyle.shadows)
+    private val lineBoxClipOutset: Float = textStyle.lineBoxClipOutset()
 
     private var cachedFillParagraph: Paragraph? = null
     private var cachedStrokeParagraph: Paragraph? = null
@@ -233,7 +234,7 @@ public class TextLayout(
     }
 
     override fun draw(canvas: Canvas) {
-        drawBgBox(canvas) {
+        drawBgBox(canvas, contentClipOutset = verticalContentClipOutset(lineBoxClipOutset)) {
             val fillParagraph = cachedFillParagraph ?: return@drawBgBox
             val x = it.left + visualOutset.left
             val y = it.top + visualOutset.top
