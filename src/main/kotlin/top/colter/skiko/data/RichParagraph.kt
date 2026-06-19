@@ -2,6 +2,8 @@ package top.colter.skiko.data
 
 import org.jetbrains.skia.Canvas
 import org.jetbrains.skia.Image
+import org.jetbrains.skia.Paint
+import org.jetbrains.skia.PaintMode
 import org.jetbrains.skia.Rect
 import org.jetbrains.skia.SamplingMode
 import org.jetbrains.skia.paragraph.Alignment
@@ -14,7 +16,9 @@ import org.jetbrains.skia.paragraph.PlaceholderStyle
 import org.jetbrains.skia.paragraph.TextStyle
 import top.colter.skiko.FontRegistry
 import top.colter.skiko.Fonts
+import top.colter.skiko.copyStyle
 import top.colter.skiko.lineBoxClipOutset
+import top.colter.skiko.px
 
 /**
  * 富文本原始行。
@@ -94,54 +98,13 @@ public fun RichParagraph.layout(
     if (maxLinesCount <= 0 || lines.isEmpty()) return RichParagraphLayout.empty()
 
     val maxWidth = width.coerceAtLeast(1f)
-    val emojiNodes = mutableListOf<RichText.Emoji>()
-    var lineBoxClipOutset = 0f
-    val paragraphStyle = ParagraphStyle().apply {
-        this.maxLinesCount = maxLinesCount
-        this.alignment = alignment
-        textStyle = fontRegistry.resolveTextStyle(defaultStyle).also {
-            lineBoxClipOutset = maxOf(lineBoxClipOutset, it.lineBoxClipOutset(defaultStyle))
-        }
-    }
-    val builder = ParagraphBuilder(paragraphStyle, fontRegistry.fonts)
-
-    lines.forEachIndexed { lineIndex, line ->
-        line.nodes.forEach { node ->
-            when (node) {
-                is RichText.Text -> {
-                    val style = node.style ?: defaultStyle
-                    val resolvedStyle = fontRegistry.resolveTextStyle(style, defaultStyle)
-                    lineBoxClipOutset = maxOf(lineBoxClipOutset, resolvedStyle.lineBoxClipOutset(defaultStyle))
-                    builder.pushStyle(resolvedStyle)
-                    builder.addText(node.value)
-                    builder.popStyle()
-                }
-
-                is RichText.Emoji -> {
-                    val style = node.style ?: defaultStyle
-                    val placeholderSize = style.emojiPlaceholderSize(defaultStyle)
-                    val scaledPlaceholderSize = (placeholderSize * node.scale).coerceAtLeast(1f)
-                    val resolvedStyle = fontRegistry.resolveTextStyle(style, defaultStyle)
-                    lineBoxClipOutset = maxOf(lineBoxClipOutset, resolvedStyle.lineBoxClipOutset(defaultStyle))
-                    builder.pushStyle(resolvedStyle)
-                    builder.addPlaceholder(
-                        PlaceholderStyle(
-                            scaledPlaceholderSize,
-                            scaledPlaceholderSize,
-                            PlaceholderAlignment.MIDDLE,
-                            BaselineMode.ALPHABETIC,
-                            0f,
-                        )
-                    )
-                    builder.popStyle()
-                    emojiNodes.add(node)
-                }
-            }
-        }
-        if (lineIndex < lines.lastIndex) builder.addText("\n")
-    }
-
-    val paragraph = builder.build().layout(maxWidth)
+    val builtParagraph = buildParagraph(
+        width = maxWidth,
+        maxLinesCount = maxLinesCount,
+        fontRegistry = fontRegistry,
+        alignment = alignment,
+    )
+    val paragraph = builtParagraph.paragraph
     val lineMetrics = paragraph.lineMetrics.map {
         RichParagraphLineMetric(
             startIndex = it.startIndex,
@@ -155,7 +118,7 @@ public fun RichParagraph.layout(
         )
     }
     val placeholders = paragraph.rectsForPlaceholders
-        .zip(emojiNodes)
+        .zip(builtParagraph.emojiNodes)
         .map { (box, node) ->
             RichParagraphPlaceholder(
                 img = node.img,
@@ -177,6 +140,92 @@ public fun RichParagraph.layout(
         placeholders = placeholders,
         lineMetrics = lineMetrics,
         didExceedMaxLines = paragraph.didExceedMaxLines(),
+        lineBoxClipOutset = builtParagraph.lineBoxClipOutset,
+    )
+}
+
+/**
+ * 构建仅用于绘制视觉加粗的 Paragraph。
+ *
+ * 返回的 Paragraph 使用与正常布局相同的文字和占位符序列，但只负责绘制文字描边，
+ * 不参与测量、换行和图片 Emoji 绘制。
+ */
+public fun RichParagraph.emphasisParagraph(
+    width: Float,
+    maxLinesCount: Int = Int.MAX_VALUE,
+    fontRegistry: FontRegistry = Fonts.default,
+    alignment: Alignment = Alignment.START,
+    textEmphasis: TextEmphasis?,
+): Paragraph? {
+    val activeTextEmphasis = textEmphasis.activeTextEmphasis() ?: return null
+    if (maxLinesCount <= 0 || lines.isEmpty()) return null
+
+    return buildParagraph(
+        width = width.coerceAtLeast(1f),
+        maxLinesCount = maxLinesCount,
+        fontRegistry = fontRegistry,
+        alignment = alignment,
+        textEmphasis = activeTextEmphasis,
+    ).paragraph
+}
+
+private fun RichParagraph.buildParagraph(
+    width: Float,
+    maxLinesCount: Int,
+    fontRegistry: FontRegistry,
+    alignment: Alignment,
+    textEmphasis: TextEmphasis? = null,
+): BuiltRichParagraph {
+    val emojiNodes = mutableListOf<RichText.Emoji>()
+    var lineBoxClipOutset = 0f
+    val paragraphStyle = ParagraphStyle().apply {
+        this.maxLinesCount = maxLinesCount
+        this.alignment = alignment
+        textStyle = fontRegistry.resolveTextStyle(defaultStyle).also {
+            lineBoxClipOutset = maxOf(lineBoxClipOutset, it.lineBoxClipOutset(defaultStyle))
+        }.withTextEmphasis(textEmphasis)
+    }
+    val builder = ParagraphBuilder(paragraphStyle, fontRegistry.fonts)
+
+    lines.forEachIndexed { lineIndex, line ->
+        line.nodes.forEach { node ->
+            when (node) {
+                is RichText.Text -> {
+                    val style = node.style ?: defaultStyle
+                    val resolvedStyle = fontRegistry.resolveTextStyle(style, defaultStyle)
+                    lineBoxClipOutset = maxOf(lineBoxClipOutset, resolvedStyle.lineBoxClipOutset(defaultStyle))
+                    builder.pushStyle(resolvedStyle.withTextEmphasis(textEmphasis))
+                    builder.addText(node.value)
+                    builder.popStyle()
+                }
+
+                is RichText.Emoji -> {
+                    val style = node.style ?: defaultStyle
+                    val placeholderSize = style.emojiPlaceholderSize(defaultStyle)
+                    val scaledPlaceholderSize = (placeholderSize * node.scale).coerceAtLeast(1f)
+                    val resolvedStyle = fontRegistry.resolveTextStyle(style, defaultStyle)
+                    lineBoxClipOutset = maxOf(lineBoxClipOutset, resolvedStyle.lineBoxClipOutset(defaultStyle))
+                    builder.pushStyle(resolvedStyle.withTextEmphasis(textEmphasis))
+                    builder.addPlaceholder(
+                        PlaceholderStyle(
+                            scaledPlaceholderSize,
+                            scaledPlaceholderSize,
+                            PlaceholderAlignment.MIDDLE,
+                            BaselineMode.ALPHABETIC,
+                            0f,
+                        )
+                    )
+                    builder.popStyle()
+                    emojiNodes.add(node)
+                }
+            }
+        }
+        if (lineIndex < lines.lastIndex) builder.addText("\n")
+    }
+
+    return BuiltRichParagraph(
+        paragraph = builder.build().layout(width.coerceAtLeast(1f)),
+        emojiNodes = emojiNodes,
         lineBoxClipOutset = lineBoxClipOutset,
     )
 }
@@ -188,7 +237,9 @@ public fun RichParagraphLayout.print(
     canvas: Canvas,
     x: Float,
     y: Float,
+    emphasisParagraph: Paragraph? = null,
 ) {
+    emphasisParagraph?.paint(canvas, x, y)
     paragraph?.paint(canvas, x, y)
 
     placeholders.forEach { placeholder ->
@@ -226,6 +277,29 @@ public fun RichParagraphLayout.print(
         )
     }
 }
+
+internal fun TextEmphasis?.activeTextEmphasis(): TextEmphasis? =
+    this?.takeIf { it.width.px > 0f }
+
+private fun TextStyle.withTextEmphasis(textEmphasis: TextEmphasis?): TextStyle {
+    val activeTextEmphasis = textEmphasis.activeTextEmphasis() ?: return this
+    val strokePaint = Paint().apply {
+        color = activeTextEmphasis.color ?: foreground?.color ?: this@withTextEmphasis.color
+        mode = PaintMode.STROKE
+        strokeWidth = activeTextEmphasis.width.px
+        isAntiAlias = true
+    }
+    return copyStyle().apply {
+        clearShadows()
+        setForeground(strokePaint)
+    }
+}
+
+private data class BuiltRichParagraph(
+    val paragraph: Paragraph,
+    val emojiNodes: List<RichText.Emoji>,
+    val lineBoxClipOutset: Float,
+)
 
 private const val DEFAULT_FONT_SIZE: Float = 14f
 

@@ -11,6 +11,7 @@ import top.colter.skiko.data.RichParagraph
 import top.colter.skiko.data.RichParagraphBuilder
 import top.colter.skiko.data.RichParagraphLayout
 import top.colter.skiko.data.RichParagraphLineMetric
+import top.colter.skiko.data.TextEmphasis
 import top.colter.skiko.dp
 import top.colter.skiko.layout.AutoSizeRichTextLayout
 import top.colter.skiko.layout.BalancedRichTextFontSizeSelector
@@ -79,10 +80,39 @@ internal class AutoSizeRichTextTest {
         assertEquals("fontSizeStep 需要大于 0", error.message)
     }
 
+    @Test
+    fun `text emphasis does not affect auto size measurement or paragraph candidates`() {
+        var plainBuildCount = 0
+        var emphasisBuildCount = 0
+        val plain = autoSizeLayout(
+            paragraph = {
+                plainBuildCount++
+                paragraph(it)
+            }
+        )
+        val emphasis = autoSizeLayout(
+            textEmphasis = TextEmphasis(1.dp),
+            paragraph = {
+                emphasisBuildCount++
+                paragraph(it)
+            }
+        )
+
+        plain.measure(deep = true)
+        emphasis.measure(deep = true)
+
+        assertEquals(plain.selectedFontSize.px, emphasis.selectedFontSize.px, 0.01f)
+        assertEquals(plain.width.px, emphasis.width.px, 0.01f)
+        assertEquals(plain.height.px, emphasis.height.px, 0.01f)
+        assertEquals(plainBuildCount, emphasisBuildCount)
+    }
+
     private fun autoSizeLayout(
         minFontSize: Dp = 20.dp,
         maxFontSize: Dp = 40.dp,
         fontSizeStep: Dp = 1.dp,
+        textEmphasis: TextEmphasis? = null,
+        paragraph: (Dp) -> RichParagraph = ::paragraph,
     ): AutoSizeRichTextLayout {
         return AutoSizeRichTextLayout(
             minFontSize = minFontSize,
@@ -92,7 +122,8 @@ internal class AutoSizeRichTextTest {
             alignment = LayoutAlignment.DEFAULT,
             intrinsicAlignment = Alignment.START,
             fontSizeSelector = BalancedRichTextFontSizeSelector,
-            paragraph = ::paragraph,
+            textEmphasis = textEmphasis,
+            paragraph = paragraph,
             modifier = Modifier(),
             parentLayout = null,
         )

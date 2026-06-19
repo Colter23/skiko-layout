@@ -1,6 +1,7 @@
 package top.colter.skiko.layout
 
 import org.jetbrains.skia.Canvas
+import org.jetbrains.skia.paragraph.Paragraph
 import org.jetbrains.skia.paragraph.Alignment
 import top.colter.skiko.Dp
 import top.colter.skiko.FontRegistry
@@ -9,6 +10,8 @@ import top.colter.skiko.Modifier
 import top.colter.skiko.data.LayoutAlignment
 import top.colter.skiko.data.RichParagraph
 import top.colter.skiko.data.RichParagraphLayout
+import top.colter.skiko.data.TextEmphasis
+import top.colter.skiko.data.emphasisParagraph
 import top.colter.skiko.data.layout
 import top.colter.skiko.data.print
 import top.colter.skiko.data.place
@@ -26,6 +29,7 @@ import kotlin.math.roundToInt
 public data class RichTextFontSizeCandidate(
     public val fontSize: Dp,
     public val layout: RichParagraphLayout,
+    public val paragraph: RichParagraph? = null,
 )
 
 /**
@@ -158,6 +162,7 @@ public fun Layout.AutoSizeRichText(
     intrinsicAlignment: Alignment = Alignment.START,
     modifier: Modifier = Modifier(),
     fontSizeSelector: RichTextFontSizeSelector = BalancedRichTextFontSizeSelector,
+    textEmphasis: TextEmphasis? = null,
     paragraph: (fontSize: Dp) -> RichParagraph,
 ) {
     Layout(
@@ -169,6 +174,7 @@ public fun Layout.AutoSizeRichText(
             alignment = alignment,
             intrinsicAlignment = intrinsicAlignment,
             fontSizeSelector = fontSizeSelector,
+            textEmphasis = textEmphasis,
             paragraph = paragraph,
             modifier = modifier,
             parentLayout = this,
@@ -190,6 +196,7 @@ public class AutoSizeRichTextLayout(
     public val alignment: LayoutAlignment,
     public val intrinsicAlignment: Alignment,
     public val fontSizeSelector: RichTextFontSizeSelector,
+    public val textEmphasis: TextEmphasis? = null,
     public val paragraph: (fontSize: Dp) -> RichParagraph,
     modifier: Modifier,
     parentLayout: Layout?,
@@ -200,6 +207,7 @@ public class AutoSizeRichTextLayout(
         private set
 
     private var selectedLayout: RichParagraphLayout? = null
+    private var selectedEmphasisParagraph: Paragraph? = null
     private var layoutWidthPx: Float = -1f
 
     init {
@@ -216,6 +224,13 @@ public class AutoSizeRichTextLayout(
         val selected = fontSizeSelector.select(candidates, safeWidth)
         selectedFontSize = selected.fontSize
         selectedLayout = selected.layout
+        selectedEmphasisParagraph = selected.paragraph?.emphasisParagraph(
+            width = safeWidth,
+            maxLinesCount = maxLinesCount,
+            fontRegistry = fontRegistry,
+            alignment = intrinsicAlignment,
+            textEmphasis = textEmphasis,
+        )
         layoutWidthPx = safeWidth
         return selected.layout
     }
@@ -248,9 +263,11 @@ public class AutoSizeRichTextLayout(
     }
 
     private fun Dp.toCandidate(widthPx: Float): RichTextFontSizeCandidate {
+        val richParagraph = paragraph(this)
         return RichTextFontSizeCandidate(
             fontSize = this,
-            layout = paragraph(this).layout(widthPx, maxLinesCount, fontRegistry, intrinsicAlignment),
+            layout = richParagraph.layout(widthPx, maxLinesCount, fontRegistry, intrinsicAlignment),
+            paragraph = richParagraph,
         )
     }
 
@@ -292,12 +309,13 @@ public class AutoSizeRichTextLayout(
     }
 
     override fun draw(canvas: Canvas) {
-        drawBgBox(canvas, contentClipOutset = richTextContentClipOutset(selectedLayout)) {
+        drawBgBox(canvas, contentClipOutset = richTextContentClipOutset(selectedLayout, textEmphasis)) {
             val layout = selectedLayout ?: return@drawBgBox
             layout.print(
                 canvas = canvas,
                 x = it.left + RICH_TEXT_VISUAL_OUTSET,
                 y = it.top + RICH_TEXT_VISUAL_OUTSET,
+                emphasisParagraph = selectedEmphasisParagraph,
             )
         }
     }

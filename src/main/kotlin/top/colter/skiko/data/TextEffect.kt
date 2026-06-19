@@ -21,6 +21,21 @@ public data class TextStroke(
 }
 
 /**
+ * 文字视觉加粗。
+ *
+ * 它通过绘制一层细描边增强字重观感，不依赖字体本身是否提供粗体字重。
+ * [color] 为 null 时使用每段文本自己的颜色。
+ */
+public data class TextEmphasis(
+    val width: Dp,
+    val color: Int? = null,
+) {
+    init {
+        require(width >= 0.dp) { "文字视觉加粗宽度需要大于等于 0" }
+    }
+}
+
+/**
  * 文字阴影。
  *
  * @param offsetX 横向偏移

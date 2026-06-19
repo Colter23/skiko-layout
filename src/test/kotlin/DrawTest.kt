@@ -66,6 +66,7 @@ internal class DrawTest {
     private fun measureTextLayout(
         modifier: Modifier = Modifier(),
         stroke: TextStroke? = null,
+        textEmphasis: TextEmphasis? = null,
         textShadows: List<TextShadow> = emptyList(),
     ): TextLayout {
         val root = measureRoot(
@@ -77,6 +78,7 @@ internal class DrawTest {
                 fontSize = 54.dp,
                 modifier = modifier,
                 stroke = stroke,
+                textEmphasis = textEmphasis,
                 textShadows = textShadows
             )
         }
@@ -975,6 +977,84 @@ internal class DrawTest {
         assertTrue(legacyBorder.shape is BoxShape.Rounded)
         val circleSafe = Modifier().circle().border(2.dp, color = Color.WHITE)
         assertTrue(circleSafe.shape is BoxShape.Circle)
+    }
+
+    @Test
+    fun `text emphasis does not change measured text layout`() {
+        val plain = measureTextLayout()
+        val emphasis = measureTextLayout(textEmphasis = TextEmphasis(2.dp, Color.RED))
+
+        assertEquals(plain.width.px, emphasis.width.px, 0.01f)
+        assertEquals(plain.height.px, emphasis.height.px, 0.01f)
+    }
+
+    @Test
+    fun `rich text emphasis does not change measured layout`() {
+        val style = TextStyle()
+            .setColor(Color.BLACK)
+            .setFontSize(32f)
+            .setFontFamily(Fonts.default.textTypeface!!.familyName)
+        val linkStyle = TextStyle()
+            .setColor(Color.BLUE)
+            .setFontSize(32f)
+            .setFontFamily(Fonts.default.textTypeface!!.familyName)
+        val paragraph = RichParagraphBuilder(style)
+            .addText("Rich title ")
+            .addText("with link", linkStyle)
+            .build()
+
+        val plainRoot = measureRoot(Modifier().width(320.dp).height(160.dp)) {
+            RichText(paragraph, maxLinesCount = 2, modifier = Modifier().fillMaxWidth())
+        }
+        val emphasisRoot = measureRoot(Modifier().width(320.dp).height(160.dp)) {
+            RichText(
+                paragraph = paragraph,
+                maxLinesCount = 2,
+                modifier = Modifier().fillMaxWidth(),
+                textEmphasis = TextEmphasis(1.dp),
+            )
+        }
+
+        val plain = plainRoot.child.single() as RichTextLayout
+        val emphasis = emphasisRoot.child.single() as RichTextLayout
+
+        assertEquals(plain.width.px, emphasis.width.px, 0.01f)
+        assertEquals(plain.height.px, emphasis.height.px, 0.01f)
+    }
+
+    @Test
+    fun `rich text emphasis draws stroke and fill without duplicating image emoji`() {
+        val emoji = solidImage(32, 32, Color.YELLOW)
+        val style = TextStyle()
+            .setColor(Color.WHITE)
+            .setFontSize(42f)
+            .setFontFamily(Fonts.default.textTypeface!!.familyName)
+        val paragraph = RichParagraphBuilder(style)
+            .addText("TEXT")
+            .addEmoji("emoji", emoji, style)
+            .build()
+
+        val plainRoot = measureRoot(Modifier().width(280.dp).height(120.dp).background(Color.BLACK)) {
+            RichText(paragraph = paragraph)
+        }
+        val emphasisRoot = measureRoot(Modifier().width(280.dp).height(120.dp).background(Color.BLACK)) {
+            RichText(
+                paragraph = paragraph,
+                textEmphasis = TextEmphasis(4.dp, Color.RED),
+            )
+        }
+
+        val plainImage = renderRoot(plainRoot)
+        val emphasisImage = renderRoot(emphasisRoot)
+        val yellowPredicate: (Int) -> Boolean = {
+            alphaOf(it) > 0 && redOf(it) > 180 && greenOf(it) > 160 && blueOf(it) < 80
+        }
+        val plainYellowPixels = countPixels(plainImage, yellowPredicate)
+        val emphasisYellowPixels = countPixels(emphasisImage, yellowPredicate)
+
+        assertTrue(countPixels(emphasisImage, ::isRedDominant) > 30)
+        assertTrue(countPixels(emphasisImage, ::isWhiteDominant) > 30)
+        assertEquals(plainYellowPixels, emphasisYellowPixels)
     }
 
     @Test

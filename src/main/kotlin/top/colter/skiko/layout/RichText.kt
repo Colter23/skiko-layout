@@ -1,6 +1,7 @@
 package top.colter.skiko.layout
 
 import org.jetbrains.skia.Canvas
+import org.jetbrains.skia.paragraph.Paragraph
 import org.jetbrains.skia.paragraph.Alignment
 import top.colter.skiko.Dp
 import top.colter.skiko.FontRegistry
@@ -9,6 +10,9 @@ import top.colter.skiko.Modifier
 import top.colter.skiko.data.LayoutAlignment
 import top.colter.skiko.data.RichParagraph
 import top.colter.skiko.data.RichParagraphLayout
+import top.colter.skiko.data.TextEmphasis
+import top.colter.skiko.data.activeTextEmphasis
+import top.colter.skiko.data.emphasisParagraph
 import top.colter.skiko.data.layout
 import top.colter.skiko.data.print
 import top.colter.skiko.data.place
@@ -35,6 +39,7 @@ public fun Layout.RichText(
     alignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     intrinsicAlignment: Alignment = Alignment.START,
     modifier: Modifier = Modifier(),
+    textEmphasis: TextEmphasis? = null,
 ) {
     Layout(
         layout = RichTextLayout(
@@ -42,6 +47,7 @@ public fun Layout.RichText(
             alignment = alignment,
             intrinsicAlignment = intrinsicAlignment,
             maxLinesCount = maxLinesCount,
+            textEmphasis = textEmphasis,
             modifier = modifier,
             parentLayout = this
         ),
@@ -54,12 +60,14 @@ public class RichTextLayout(
     public val alignment: LayoutAlignment,
     public val intrinsicAlignment: Alignment,
     public val maxLinesCount: Int,
+    public val textEmphasis: TextEmphasis? = null,
     modifier: Modifier,
     parentLayout: Layout?,
     fontRegistry: FontRegistry = parentLayout?.fontRegistry ?: Fonts.default,
 ) : Layout(modifier, parentLayout, fontRegistry) {
 
     private var cachedParagraph: RichParagraphLayout? = null
+    private var cachedEmphasisParagraph: Paragraph? = null
     private var layoutWidthPx: Float = -1f
 
     private fun resolveParagraph(widthPx: Float): RichParagraphLayout {
@@ -68,6 +76,13 @@ public class RichTextLayout(
         if (cached != null && layoutWidthPx == safeWidth) return cached
 
         val result = paragraph.layout(safeWidth, maxLinesCount, fontRegistry, intrinsicAlignment)
+        cachedEmphasisParagraph = paragraph.emphasisParagraph(
+            width = safeWidth,
+            maxLinesCount = maxLinesCount,
+            fontRegistry = fontRegistry,
+            alignment = intrinsicAlignment,
+            textEmphasis = textEmphasis,
+        )
         cachedParagraph = result
         layoutWidthPx = safeWidth
         return result
@@ -111,12 +126,13 @@ public class RichTextLayout(
     }
 
     override fun draw(canvas: Canvas) {
-        drawBgBox(canvas, contentClipOutset = richTextContentClipOutset(cachedParagraph)) {
+        drawBgBox(canvas, contentClipOutset = richTextContentClipOutset(cachedParagraph, textEmphasis)) {
             val layout = cachedParagraph ?: return@drawBgBox
             layout.print(
                 canvas = canvas,
                 x = it.left + RICH_TEXT_VISUAL_OUTSET,
                 y = it.top + RICH_TEXT_VISUAL_OUTSET,
+                emphasisParagraph = cachedEmphasisParagraph,
             )
         }
     }
@@ -125,8 +141,23 @@ public class RichTextLayout(
 internal const val RICH_TEXT_VISUAL_OUTSET: Float = 1f
 internal const val RICH_TEXT_VISUAL_OUTSET_HORIZONTAL: Float = RICH_TEXT_VISUAL_OUTSET * 2f
 internal const val RICH_TEXT_VISUAL_OUTSET_VERTICAL: Float = RICH_TEXT_VISUAL_OUTSET * 2f
-internal fun richTextContentClipOutset(layout: RichParagraphLayout?): Edge =
-    verticalContentClipOutset(layout?.lineBoxClipOutset ?: 0f)
+internal fun richTextContentClipOutset(
+    layout: RichParagraphLayout?,
+    textEmphasis: TextEmphasis? = null,
+): Edge = textEffectContentClipOutset(layout?.lineBoxClipOutset ?: 0f, textEmphasis)
+
+internal fun textEffectContentClipOutset(
+    verticalOutset: Float,
+    textEmphasis: TextEmphasis? = null,
+): Edge {
+    val emphasisOutset = textEmphasis.activeTextEmphasis()?.width ?: 0.dp
+    return Edge(
+        top = verticalOutset.toDp() + emphasisOutset,
+        right = emphasisOutset,
+        bottom = verticalOutset.toDp() + emphasisOutset,
+        left = emphasisOutset,
+    )
+}
 
 internal fun verticalContentClipOutset(outset: Float): Edge =
     if (outset <= 0f) Edge() else Edge(top = outset.toDp(), bottom = outset.toDp())

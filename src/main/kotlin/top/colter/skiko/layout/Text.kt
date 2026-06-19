@@ -4,8 +4,10 @@ import org.jetbrains.skia.*
 import org.jetbrains.skia.paragraph.*
 import top.colter.skiko.*
 import top.colter.skiko.data.LayoutAlignment
+import top.colter.skiko.data.TextEmphasis
 import top.colter.skiko.data.TextShadow
 import top.colter.skiko.data.TextStroke
+import top.colter.skiko.data.activeTextEmphasis
 import top.colter.skiko.data.place
 import top.colter.skiko.data.toAlignment
 import kotlin.math.max
@@ -36,6 +38,7 @@ public fun Layout.Text(
     intrinsicAlignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     modifier: Modifier = Modifier(),
     stroke: TextStroke? = null,
+    textEmphasis: TextEmphasis? = null,
     textShadows: List<TextShadow> = emptyList(),
 ) {
     Text(
@@ -51,6 +54,7 @@ public fun Layout.Text(
         maxLinesCount = maxLinesCount,
         modifier = modifier,
         stroke = stroke,
+        textEmphasis = textEmphasis,
         textShadows = textShadows,
     )
 }
@@ -72,6 +76,7 @@ public fun Layout.Text(
     intrinsicAlignment: LayoutAlignment = LayoutAlignment.DEFAULT,
     modifier: Modifier = Modifier(),
     stroke: TextStroke? = null,
+    textEmphasis: TextEmphasis? = null,
     textShadows: List<TextShadow> = emptyList(),
 ) {
     val resolvedTextStyle = fontRegistry.resolveTextStyle(textStyle).withTextShadows(textShadows)
@@ -86,6 +91,7 @@ public fun Layout.Text(
             modifier = modifier,
             parentLayout = this,
             stroke = stroke,
+            textEmphasis = textEmphasis,
         ),
         content = {},
     )
@@ -101,6 +107,7 @@ public class TextLayout(
     parentLayout: Layout?,
     fontRegistry: FontRegistry = parentLayout?.fontRegistry ?: Fonts.default,
     public val stroke: TextStroke? = null,
+    public val textEmphasis: TextEmphasis? = null,
 ) : Layout(modifier, parentLayout, fontRegistry) {
 
     private val visualOutset: TextVisualOutset = textVisualOutset(stroke, textStyle.shadows)
@@ -108,6 +115,7 @@ public class TextLayout(
 
     private var cachedFillParagraph: Paragraph? = null
     private var cachedStrokeParagraph: Paragraph? = null
+    private var cachedEmphasisParagraph: Paragraph? = null
     private var cachedShadowParagraphs: List<TextShadowParagraph> = emptyList()
     private var cachedFillNoShadowParagraph: Paragraph? = null
     private var layoutWidthPx: Float = -1f
@@ -130,6 +138,19 @@ public class TextLayout(
             color = stroke.color
             mode = PaintMode.STROKE
             strokeWidth = stroke.width.px
+            isAntiAlias = true
+        }
+        return textStyle.copyStyle().apply {
+            clearShadows()
+            setForeground(strokePaint)
+        }
+    }
+
+    private fun emphasisTextStyle(textEmphasis: TextEmphasis): TextStyle {
+        val strokePaint = Paint().apply {
+            color = textEmphasis.color ?: textStyle.foreground?.color ?: textStyle.color
+            mode = PaintMode.STROKE
+            strokeWidth = textEmphasis.width.px
             isAntiAlias = true
         }
         return textStyle.copyStyle().apply {
@@ -172,6 +193,7 @@ public class TextLayout(
         val hasStrokeAndShadows = stroke != null && textStyle.shadows.isNotEmpty()
         cachedFillParagraph = paragraph
         cachedStrokeParagraph = stroke?.let { buildParagraph(strokeTextStyle(it), safeWidth) }
+        cachedEmphasisParagraph = textEmphasis.activeTextEmphasis()?.let { buildParagraph(emphasisTextStyle(it), safeWidth) }
         cachedShadowParagraphs = if (hasStrokeAndShadows) {
             val effectStroke = stroke
             textStyle.shadows.map {
@@ -234,12 +256,13 @@ public class TextLayout(
     }
 
     override fun draw(canvas: Canvas) {
-        drawBgBox(canvas, contentClipOutset = verticalContentClipOutset(lineBoxClipOutset)) {
+        drawBgBox(canvas, contentClipOutset = textEffectContentClipOutset(lineBoxClipOutset, textEmphasis)) {
             val fillParagraph = cachedFillParagraph ?: return@drawBgBox
             val x = it.left + visualOutset.left
             val y = it.top + visualOutset.top
 
             if (stroke == null) {
+                cachedEmphasisParagraph?.paint(canvas, x, y)
                 fillParagraph.paint(canvas, x, y)
                 return@drawBgBox
             }
@@ -248,6 +271,7 @@ public class TextLayout(
                 shadowParagraph.paint(canvas, it, x, y)
             }
             cachedStrokeParagraph?.paint(canvas, x, y)
+            cachedEmphasisParagraph?.paint(canvas, x, y)
             (cachedFillNoShadowParagraph ?: fillParagraph).paint(canvas, x, y)
         }
     }
