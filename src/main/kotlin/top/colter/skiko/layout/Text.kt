@@ -236,6 +236,7 @@ public class TextLayout(
             (maxOuterWidth - resolvedPadding.horizontal).coerceAtLeast(0.dp)
         else 10000.dp
 
+        val autoHeight = height.isNull()
         val paragraphWidth = (maxContentWidth.px - visualOutset.horizontal).coerceAtLeast(1f)
         val paragraph = resolveParagraph(paragraphWidth)
         if (width.isNull()) {
@@ -248,6 +249,14 @@ public class TextLayout(
         if (height.isNull()) height = (paragraph.height + visualOutset.vertical).toDp() + resolvedPadding.vertical
 
         finishMeasure()
+
+        // Auto-width text can shrink below maxWidth; paragraph alignment must use the final content width.
+        val finalParagraphWidth = (contentWidth.px - visualOutset.horizontal).coerceAtLeast(1f)
+        val finalParagraph = resolveParagraph(finalParagraphWidth)
+        if (autoHeight) {
+            height = (finalParagraph.height + visualOutset.vertical).toDp() + resolvedPadding.vertical
+            finishMeasure()
+        }
     }
 
     override fun place(bounds: LayoutBounds) {

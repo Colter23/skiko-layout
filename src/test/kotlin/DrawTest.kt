@@ -334,6 +334,37 @@ internal class DrawTest {
     }
 
     @Test
+    fun `文字自适应宽度居中时按最终宽度绘制`() {
+        val root = measureRoot(
+            Modifier().width(260.dp).height(90.dp).background(Color.BLACK)
+        ) {
+            Box(
+                modifier = Modifier()
+                    .background(Color.RED)
+                    .padding(horizontal = 12.dp)
+            ) {
+                Text(
+                    text = "视频",
+                    color = Color.WHITE,
+                    fontSize = 28.dp,
+                    intrinsicAlignment = LayoutAlignment.CENTER,
+                    modifier = Modifier()
+                        .height(42.dp)
+                        .maxWidth(200.dp)
+                )
+            }
+        }
+
+        val label = root.child.single() as BoxLayout
+        val text = label.child.single() as TextLayout
+        val image = renderRoot(root)
+
+        assertTrue(label.width.px < 100f, "标签应按文本实际宽度收缩，实际 ${label.width.px}px")
+        assertTrue(text.width.px < 80f, "文本应按实际宽度收缩，实际 ${text.width.px}px")
+        assertTrue(countPixels(image, ::isWhiteDominant) > 20)
+    }
+
+    @Test
     fun `文字阴影绘制偏移阴影`() {
         val root = measureRoot(
             Modifier().width(260.dp).height(120.dp).background(Color.BLACK)
